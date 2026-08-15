@@ -13,22 +13,22 @@ describe('createMmkvKeyValueStore', () => {
 
   it('round-trips a string value', async () => {
     const store = createStore();
-    await store.write('auth/session', '{"userId":"abc"}');
-    await expect(store.read('auth/session')).resolves.toBe('{"userId":"abc"}');
+    await store.write('prefs/lastLoggedInEmail', 'alex@example.com');
+    await expect(store.read('prefs/lastLoggedInEmail')).resolves.toBe('alex@example.com');
   });
 
   it('overwrites an existing value', async () => {
     const store = createStore();
-    await store.write('events/u1', '[]');
-    await store.write('events/u1', '[{"id":"1"}]');
-    await expect(store.read('events/u1')).resolves.toBe('[{"id":"1"}]');
+    await store.write('prefs/hasEnabledBiometrics', 'false');
+    await store.write('prefs/hasEnabledBiometrics', 'true');
+    await expect(store.read('prefs/hasEnabledBiometrics')).resolves.toBe('true');
   });
 
   it('remove makes a subsequent read return null', async () => {
     const store = createStore();
-    await store.write('auth/session', '{"userId":"abc"}');
-    await store.remove('auth/session');
-    await expect(store.read('auth/session')).resolves.toBeNull();
+    await store.write('prefs/lastLoggedInEmail', 'alex@example.com');
+    await store.remove('prefs/lastLoggedInEmail');
+    await expect(store.read('prefs/lastLoggedInEmail')).resolves.toBeNull();
   });
 
   it('removing a missing key does not reject', async () => {

@@ -1,6 +1,6 @@
 /**
- * Component tests inject in-memory service implementations, so no storage
- * mock is needed here. Only genuinely native-only modules are stubbed.
+ * Component tests inject in-memory service implementations, so native Firebase
+ * is never loaded. Only genuinely native-only modules are stubbed.
  */
 
 // The library's mock is a default export, so it has to be unwrapped for the

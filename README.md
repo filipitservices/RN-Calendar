@@ -21,7 +21,7 @@ A calendar and meeting-management app for Android, built with plain React Native
 
 ## What it does
 
-- **Registration and sign-in** with email/password, per-field validation, loading states, and distinct messages for invalid credentials, an already-registered email, and storage failure.
+- **Registration and sign-in** with email/password via Firebase Authentication, per-field validation, loading states, and distinct messages for invalid credentials, an already-registered email, and an unavailable service.
 - **Calendar dashboard** as the main authenticated screen: a six-row month grid, previous/next month paging, previous/next day paging, a "Today" shortcut, event-count dots per day, and the selected day's agenda.
 - **Event creation and editing** through a single form screen — the same validation and the same hook back both, because they are the same domain operation.
 - **Profile** with the signed-in user's details, their event count, and logout.
@@ -58,6 +58,10 @@ Runtime and tooling dependencies:
 | `@react-navigation/bottom-tabs` | 7.18.16 |
 | `react-native-screens` | 4.27.0 |
 | `react-native-safe-area-context` | 5.9.0 |
+| `@react-native-firebase/app` | 26.2.0 |
+| `@react-native-firebase/auth` | 26.2.0 |
+| `@react-native-firebase/firestore` | 26.2.0 |
+| Google services Gradle plugin | 4.5.0 |
 | `react-native-mmkv` | 4.3.2 |
 | `react-native-nitro-modules` | 0.35.9 |
 | `jest` | 29.7.0 |
@@ -137,7 +141,7 @@ npm start
 npm run android
 ```
 
-`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps. `react-native-mmkv` v4 is a Nitro module; Android picks it up through the existing autolinking in `android/settings.gradle`. iOS needs `pod install` after the first install or whenever the native lockfile would change. This Windows development machine has no CocoaPods, so `pod install` was not run here.
+`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps. React Native Firebase and `react-native-mmkv` (Nitro) are autolinked; Android also applies the Google services plugin in `android/app/build.gradle`. iOS needs `pod install` after the first install or whenever the native lockfile would change, **and** a real `GoogleService-Info.plist` — none is supplied, so iOS Firebase is not configured. This Windows development machine has no CocoaPods, so `pod install` was not run here.
 
 ## Testing
 
@@ -148,7 +152,7 @@ npm test             # jest
 npm run test:coverage
 ```
 
-The suite has **217 tests across 15 files**, at **91.6% statement coverage** overall and effectively full coverage of `src/domain`. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
+The suite has **217 tests across 15 files**, at **91.88% statement coverage** overall and effectively full coverage of `src/domain`. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
 
 What is actually covered:
 
@@ -156,9 +160,12 @@ What is actually covered:
 - **Validation** — email shape, password rules, event title bounds, and end-before-start.
 - **Decoding** — malformed persisted records are rejected rather than trusted.
 - **The auth reducer's** state transitions, including that a late form action cannot drop an active session.
-- **Services**, against an in-memory `KeyValueStore` rather than a mocked native storage module.
+- **Firebase Auth error mapping** (`mapFirebaseAuthError`) — vendor codes onto the closed `AuthFailure` union.
+- **In-memory auth and event doubles**, against `KeyValueStore` rather than the native Firebase SDKs.
 - **The MMKV adapter**, against the library's in-memory `createMMKV` mock: missing keys return `null`, writes round-trip, overwrite and remove behave, and a refused write (empty key) rejects.
 - **Whole-app flows** (`src/app/AppShell.test.tsx`) through the real navigator and providers: registration, invalid-credential handling, auth gating, session restore, logout, creating an event, editing it, and confirming an event stays on its own day when the selection moves.
+
+Native `firebaseAuthService` / `firestoreEventService` are excluded from coverage. They require the Android Firebase SDK. Use the Firebase Console rules simulator to check `firestore.rules`; this repo does not run an emulator suite.
 
 ## Building
 
@@ -188,9 +195,9 @@ src/
     events/       event model, validation
     auth/         user model, validation
   services/     I/O boundary - an interface plus an implementation each
-    storage/      keyValueStore (interface), mmkv + memory implementations
-    auth/         authService (interface), localAuthService
-    events/       eventService (interface), localEventService
+    storage/      keyValueStore, mmkv (device prefs), memory (tests)
+    auth/         authService, firebaseAuthService, localAuthService (test double)
+    events/       eventService, firestoreEventService, localEventService (test double)
   features/
     auth/         AuthProvider, authReducer, SignIn / SignUp screens
     calendar/     CalendarScreen, useCalendar, MonthGrid / DayCell / MonthNavigator / …
@@ -202,7 +209,7 @@ src/
   lib/          result.ts, id.ts
 ```
 
-Dependencies flow one way: `app → navigation → features → domain | services | ui | lib`. `domain` imports nothing from React or React Native, which is why it is trivially testable. Screens never touch a concrete service or MMKV; they use `useAuth()` and `useEvents()`.
+Dependencies flow one way: `app → navigation → features → domain | services | ui | lib`. `domain` imports nothing from React or React Native, which is why it is trivially testable. Screens never touch a concrete service, MMKV, or `@react-native-firebase/*`; they use `useAuth()` and `useEvents()`.
 
 **State ownership** is explicit. `AuthProvider` owns the session via a reducer whose state is a discriminated union (`restoring | signedOut | signedIn`), so "signed in without a user" cannot be represented. `EventsProvider` owns the event list. Everything else — a day's agenda, per-day event counts — is derived during render with `useMemo`, so there is no second copy kept in sync by effects. Updates are immutable throughout.
 
@@ -225,31 +232,80 @@ Calendar apps acquire off-by-one-day bugs by storing instants and rendering civi
 
 ## Persistence and the service boundary
 
-`AuthService` and `EventService` are interfaces. The MVP implementations sit on a `KeyValueStore` interface, and everything read back from storage is decoded and validated — a corrupt record is dropped, not trusted and not crashed on. The concrete implementations are chosen in exactly one file, `src/app/services.ts`. Replacing them with a backend means writing new implementations of the same interfaces, with no changes to any screen. The component tests already exploit this by injecting in-memory implementations.
+`AuthService` and `EventService` are interfaces. Production bindings live in exactly one file, `src/app/services.ts`: Firebase Authentication, Cloud Firestore, and MMKV for device-local prefs. Tests inject in-memory doubles of the same interfaces via `AppShell`. Screens never import Firebase or MMKV.
 
-`KeyValueStore` is the app's storage contract: `read` / `write` / `remove` over `Promise<string | null>`. Missing keys are `null`. JSON serialisation lives in `readJson` / `writeJson` above that interface, not inside the backend. The contract is async even though MMKV itself is synchronous, so auth and event services do not change when the native library does.
+There is no JavaScript `initializeApp` and no web Firebase config. The native default app is created by the Google services Gradle plugin from `android/app/google-services.json`.
 
-The production backend is a single MMKV v4 instance (`createMMKV({ id: 'calendarapp' })`) in `src/services/storage/mmkvKeyValueStore.ts`. That file is the only import of `react-native-mmkv`. The instance id is the namespace; keys at the interface remain `auth/accounts`, `auth/session`, and `events/${userId}`. `set` throws (for example on an empty key) become rejected promises, which those services already map to `{ kind: 'storageUnavailable' }`. MMKV is not encrypted: encrypting the file with a key shipped in the app would imply a security boundary that still does not exist.
+### Android Firebase config
 
-`react-native-mmkv` 4.3.2 is a Nitro module and requires `react-native-nitro-modules` 0.35.9 (the pair 4.3.2 was published against). No extra Gradle or Podfile entries are added; Android autolinking covers the native side, and iOS needs `pod install`. Jest cannot load Nitro's TurboModule, so `jest.setup.js` stubs `react-native-nitro-modules`. MMKV then uses its own in-memory `createMockMMKV` when `JEST_WORKER_ID` is set.
+| | |
+| --- | --- |
+| Gradle source of truth | `android/app/google-services.json` (plural filename; committed — Firebase documents this file as non-secret identifiers) |
+| Received dump | `__assets/google-service.json` (singular; gitignored). Do not let it silently diverge from the app-module copy. |
+| `applicationId` / `namespace` | `com.calendarapp` — matches `package_name` in the JSON. Do not change the application ID. |
+| Firebase project | `react-native-calendar-f87fa` |
+| Plugin | `com.google.gms:google-services:4.5.0` on the root classpath; `com.google.gms.google-services` applied in the app module |
+| RN Firebase packages | `@react-native-firebase/app`, `auth`, and `firestore`, all pinned at **26.2.0** (same version; v26 requires New Architecture, which this project already enables) |
 
-There is no AsyncStorage-to-MMKV data migration. This app is `0.1.0`, has never been run on a device, and the official MMKV migration sample keeps AsyncStorage plus `InteractionManager` (removed in RN 0.87). A migrator would have preserved a dependency for data that does not exist.
+iOS: no `GoogleService-Info.plist` was supplied. Do not invent one, and do not call `FirebaseApp.configure()` until a real plist exists (it would crash). Android is the configured platform.
 
-**On credentials:** accounts are stored on the device, and the password is held in local storage in plain form. This is stated plainly rather than disguised — hashing on the client with a client-side salt would protect nothing and would only imply a security guarantee that does not exist. There is no backend, no fabricated credentials, and no security boundary here. Real credential handling belongs on a server behind `AuthService`.
+**Not in this app:** Cloud Storage, Analytics, Crashlytics, Messaging, Cloud Functions, the Admin SDK, or image pickers. Profile avatars are derived initials. The `storage_bucket` field in `google-services.json` is unused.
 
-There is no device-authentication code, and no placeholder pretending it exists.
+### Authentication
+
+`User.id` is the Firebase **UID** (`asUserId(uid)`). Email is not an identifier. `displayName` is written with `updateProfile` after `createUserWithEmailAndPassword`. `createdAt` comes from `user.metadata.creationTime`, normalised to ISO at the service boundary.
+
+`AuthService.subscribe` wraps `onAuthStateChanged`. `AuthProvider` subscribes once; the existing `restoring` status covers Firebase's first callback so the sign-in screen does not flash. Passwords and tokens are not stored in the app. Firebase `error.code` values are mapped in `mapFirebaseAuthError` onto `AuthFailure` (`emailAlreadyRegistered`, `invalidCredentials`, `unavailable`).
+
+The in-memory `localAuthService` is a **test double** only. It still stores a plain password because tests are not a security boundary.
+
+### Events (Cloud Firestore)
+
+Path: `users/{uid}/events/{eventId}`. Document fields match `CalendarEvent` (ISO strings for times and audit fields). Reads go through `decodeCalendarEvent`. Drafts still pass `validateEventDraft` in the service before a write.
+
+Rules are in `firestore.rules` (not open, and not “any signed-in user can read all events”):
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/events/{eventId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+`firebase.json` points at those rules for `firebase deploy --only firestore:rules`. This environment cannot log into the Firebase project; publishing rules is an operator step.
+
+### Firebase Console (operator)
+
+Before a device can sign in or persist events:
+
+1. Enable the **Email/Password** sign-in provider.
+2. Create a **Cloud Firestore** database.
+3. Publish `firestore.rules` (`firebase deploy --only firestore:rules`, or paste them in the Console). Check them in the Console rules simulator rather than an in-repo emulator suite.
+
+### Device-local prefs (MMKV)
+
+Small values that belong on the device rather than in Firebase — last signed-in email, biometric opt-in, and similar flags — go through `KeyValueStore`. Production uses a single MMKV v4 instance (`createMMKV({ id: 'calendarapp' })`) in `src/services/storage/mmkvKeyValueStore.ts`, the only import of `react-native-mmkv`. The instance id is the namespace; keys at the interface stay unprefixed. `set` throws (for example on an empty key) become rejected promises.
+
+`react-native-mmkv` 4.3.2 is a Nitro module and requires `react-native-nitro-modules` 0.35.9. Android autolinking covers the native side. Jest cannot load Nitro's TurboModule, so `jest.setup.js` stubs `react-native-nitro-modules`; MMKV then uses its in-memory `createMockMMKV` when `JEST_WORKER_ID` is set.
+
+MMKV is not a second copy of the account or the calendar. Passwords, sessions, and events stay on Firebase.
+
+There is no device-authentication code yet, and no placeholder pretending it exists.
 
 ## Verification status
 
-Verified by running it:
+Verified by running it after the Firebase persistence change:
 
-- `npx tsc --noEmit` — clean, with `strict` on and no `any`, no non-null assertions, and no error-silencing casts anywhere in `src/`.
+- `npx tsc --noEmit` — clean, with `strict` on.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest --coverage` — 217 tests pass; 91.6% statements overall, ~100% of `src/domain`.
-- `npx react-native bundle --platform android --dev false` — **succeeds** after the MMKV adapter was added. This walks the entire Metro module graph, including `react-native-mmkv`, so every import in the app resolves for the device runtime. It is the check that stays reproducible when the Gradle path constraint below applies.
-- The whole-app tests mount the real `RootNavigator`, providers, and screens, so navigation, auth gating, and the create/edit/logout flows are exercised end to end in the test suite.
-- `./gradlew assembleDebug -PreactNativeArchitectures=x86_64` — **BUILD SUCCESSFUL** on this machine before the storage backend changed (158 tasks; `compileSdk 37`; React Navigation native edits compiled). The next assemble will autolink `react-native-mmkv` and `react-native-nitro-modules`. That rebuild was not repeated in this session because of the Gradle `MAX_PATH` constraint below; it is not claimed as re-verified after MMKV.
-- `./gradlew assembleRelease` — **BUILD SUCCESSFUL** in the same pre-MMKV session (24.4 MB APK). Same caveat as debug.
+- `npx jest --coverage` — 217 tests pass (15 files); 91.88% statements overall, ~100% of `src/domain`. Native Firebase adapters are excluded from coverage and are not executed in Jest.
+- `npx react-native bundle --platform android --dev false` — **succeeds**. This walks the Metro module graph, including `@react-native-firebase/app`, `auth`, and `firestore`.
+- The whole-app tests mount the real `RootNavigator`, providers, and screens, so navigation, auth gating, and the create/edit/logout flows are exercised end to end against in-memory doubles.
+- Live Email/Password + Firestore on a device is **not** claimed from this machine. `./gradlew assembleDebug` / `assembleRelease` succeeded in an earlier session before Firebase; they are not re-claimed here because of the Gradle `MAX_PATH` constraint below.
 
 ### Known environment constraints
 

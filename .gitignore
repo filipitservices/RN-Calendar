@@ -37,6 +37,7 @@ yarn-error.log*
 *.p8
 *.p12
 *.mobileprovision
+__assets/
 
 # OS
 .DS_Store

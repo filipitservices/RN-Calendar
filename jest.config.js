@@ -14,6 +14,9 @@ module.exports = {
     '!src/**/*.test-d.ts',
     '!src/**/index.ts',
     '!src/app/services.ts',
+    // Native Firebase adapters: exercised on device, not in Jest.
+    '!src/services/auth/firebaseAuthService.ts',
+    '!src/services/events/firestoreEventService.ts',
   ],
   // Thresholds sit just below the current numbers, so the suite fails on a
   // regression rather than being a target to game. Note that Jest excludes

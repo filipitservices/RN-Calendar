@@ -1,7 +1,7 @@
 /**
- * The app's only storage abstraction. Services depend on this interface, never
- * on a concrete storage package, so persistence can be swapped (a real backend,
- * SQLite, encrypted storage) without touching domain or UI code.
+ * Device-local string store for small prefs (last email, biometric opt-in,
+ * …). Auth sessions and events live on Firebase, not here. Tests use the
+ * in-memory implementation of this same interface.
  */
 export type KeyValueStore = {
   read(key: string): Promise<string | null>;

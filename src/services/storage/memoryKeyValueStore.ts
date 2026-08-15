@@ -1,8 +1,8 @@
 import type { KeyValueStore } from './keyValueStore';
 
 /**
- * In-memory implementation used by tests so service behaviour can be verified
- * without loading the MMKV native module.
+ * In-memory implementation used by tests so prefs and local auth/event
+ * doubles can run without native MMKV or Firebase.
  */
 export const createMemoryKeyValueStore = (
   initial: Readonly<Record<string, string>> = {},

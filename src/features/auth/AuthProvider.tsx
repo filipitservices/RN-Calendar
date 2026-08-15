@@ -29,19 +29,9 @@ export const AuthProvider = ({ service, children }: AuthProviderProps) => {
   const [state, dispatch] = useReducer(authReducer, initialAuthState);
 
   useEffect(() => {
-    let active = true;
-    const restore = async () => {
-      // A restore failure is indistinguishable from "no session" as far as the
-      // UI is concerned: either way the user needs to sign in.
-      const user = await service.restoreSession().catch(() => null);
-      if (active) {
-        dispatch({ type: 'restored', user });
-      }
-    };
-    void restore();
-    return () => {
-      active = false;
-    };
+    return service.subscribe(user => {
+      dispatch({ type: 'restored', user });
+    });
   }, [service]);
 
   const register = useCallback(
@@ -72,7 +62,6 @@ export const AuthProvider = ({ service, children }: AuthProviderProps) => {
 
   const signOut = useCallback(async () => {
     await service.signOut();
-    dispatch({ type: 'signedOut' });
   }, [service]);
 
   const dismissFailure = useCallback(() => dispatch({ type: 'failureDismissed' }), []);
@@ -112,7 +101,7 @@ export const authFailureMessage = (failure: AuthFailure): string => {
       return 'That email and password combination does not match an account.';
     case 'emailAlreadyRegistered':
       return 'An account already exists for that email address.';
-    case 'storageUnavailable':
-      return 'Could not reach local storage. Please try again.';
+    case 'unavailable':
+      return 'Could not reach the authentication service. Please try again.';
   }
 };

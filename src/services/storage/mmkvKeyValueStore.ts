@@ -5,15 +5,15 @@ import type { KeyValueStore } from './keyValueStore';
 /**
  * The one place in the app that knows MMKV exists. The instance id namespaces
  * this app's data; keys at the KeyValueStore boundary stay unprefixed
- * (`auth/accounts`, `events/${userId}`, …).
+ * (`prefs/lastLoggedInEmail`, …). Auth and events are not stored here.
  */
 const INSTANCE_ID = 'calendarapp';
 
 /**
  * Adapts a synchronous MMKV instance to the async string-only KeyValueStore
  * contract. Missing keys become `null` (MMKV's `getString` returns `undefined`);
- * throws from `set`/`remove` become rejected promises so callers' existing
- * `try/catch` still maps them to `storageUnavailable`.
+ * throws from `set`/`remove` become rejected promises so callers can map them
+ * to an unavailable failure.
  */
 export const createMmkvKeyValueStore = (storage: MMKV): KeyValueStore => ({
   read: async key => storage.getString(key) ?? null,

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "592269470644",
+    "project_id": "react-native-calendar-f87fa",
+    "storage_bucket": "react-native-calendar-f87fa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592269470644:android:f638bdaf438d660c64a0e1",
+        "android_client_info": {
+          "package_name": "com.calendarapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMXwKVXuxd6DMnHLuHUbTL59ldkyVBvRU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

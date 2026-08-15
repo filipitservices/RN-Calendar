@@ -1,3 +1,7 @@
+import { waitFor } from '@testing-library/react-native';
+
+import type { User } from '../../domain/auth/user';
+import type { AuthService } from './authService';
 import { createMemoryKeyValueStore } from '../storage/memoryKeyValueStore';
 import { createLocalAuthService } from './localAuthService';
 
@@ -12,6 +16,14 @@ const setup = () => {
   return { store, service: createLocalAuthService(store) };
 };
 
+const sessionOf = (service: AuthService): Promise<User | null> =>
+  new Promise(resolve => {
+    const stop = service.subscribe(user => {
+      stop();
+      resolve(user);
+    });
+  });
+
 describe('localAuthService', () => {
   it('registers an account and signs the user straight in', async () => {
     const { service } = setup();
@@ -23,7 +35,7 @@ describe('localAuthService', () => {
       expect(result.value.displayName).toBe('Alex Morgan');
       expect(result.value.id).not.toBe('');
     }
-    await expect(service.restoreSession()).resolves.not.toBeNull();
+    await expect(sessionOf(service)).resolves.not.toBeNull();
   });
 
   it('normalises the email so case does not create a second account', async () => {
@@ -70,7 +82,7 @@ describe('localAuthService', () => {
 
   it('restores nothing when no one has signed in', async () => {
     const { service } = setup();
-    await expect(service.restoreSession()).resolves.toBeNull();
+    await expect(sessionOf(service)).resolves.toBeNull();
   });
 
   it('clears the session on sign-out but keeps the account', async () => {
@@ -78,7 +90,7 @@ describe('localAuthService', () => {
     await service.register(registration);
     await service.signOut();
 
-    await expect(service.restoreSession()).resolves.toBeNull();
+    await expect(sessionOf(service)).resolves.toBeNull();
     const back = await service.signIn({ email: registration.email, password: 'calendar1' });
     expect(back.ok).toBe(true);
   });
@@ -93,17 +105,15 @@ describe('localAuthService', () => {
     });
 
     expect(second.ok).toBe(true);
-    if (second.ok && (await service.restoreSession()) !== null) {
-      const restored = await service.restoreSession();
-      expect(restored?.email).toBe('sam@example.com');
-    }
+    const restored = await sessionOf(service);
+    expect(restored?.email).toBe('sam@example.com');
   });
 
   it('survives a corrupt accounts entry instead of crashing', async () => {
     const store = createMemoryKeyValueStore({ 'auth/accounts': 'not json' });
     const service = createLocalAuthService(store);
 
-    await expect(service.restoreSession()).resolves.toBeNull();
+    await expect(sessionOf(service)).resolves.toBeNull();
     const result = await service.register(registration);
     expect(result.ok).toBe(true);
   });
@@ -127,5 +137,24 @@ describe('localAuthService', () => {
 
     const result = await service.signIn({ email: 'sam@example.com', password: 'calendar2' });
     expect(result.ok).toBe(true);
+  });
+
+  it('notifies subscribers when the session changes', async () => {
+    const { service } = setup();
+    const seen: Array<User | null> = [];
+    const stop = service.subscribe(user => {
+      seen.push(user);
+    });
+
+    await waitFor(() => {
+      expect(seen.length).toBeGreaterThan(0);
+    });
+    await service.register(registration);
+    await service.signOut();
+    stop();
+
+    expect(seen[0]).toBeNull();
+    expect(seen.some(user => user?.email === 'alex@example.com')).toBe(true);
+    expect(seen[seen.length - 1]).toBeNull();
   });
 });

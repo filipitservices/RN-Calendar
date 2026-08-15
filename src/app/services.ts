@@ -1,11 +1,13 @@
-import { createLocalAuthService } from '../services/auth/localAuthService';
-import { createLocalEventService } from '../services/events/localEventService';
+import { createFirebaseAuthService } from '../services/auth/firebaseAuthService';
+import { createFirestoreEventService } from '../services/events/firestoreEventService';
 import { mmkvKeyValueStore } from '../services/storage/mmkvKeyValueStore';
 
 /**
- * The single place where interfaces are bound to implementations. Swapping the
- * MVP's device-local persistence for a backend means changing these two lines.
+ * The single place where interfaces are bound to implementations.
  */
-export const authService = createLocalAuthService(mmkvKeyValueStore);
+export const authService = createFirebaseAuthService();
 
-export const eventService = createLocalEventService(mmkvKeyValueStore);
+export const eventService = createFirestoreEventService();
+
+/** Device-local prefs. Do not put accounts or calendar events here. */
+export const keyValueStore = mmkvKeyValueStore;

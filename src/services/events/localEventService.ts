@@ -29,6 +29,9 @@ const fromDraft = (draft: EventDraft) => ({
   endMinutes: draft.endMinutes,
 });
 
+/**
+ * In-memory EventService used by tests. Production uses Cloud Firestore.
+ */
 export const createLocalEventService = (store: KeyValueStore): EventService => {
   const load = async (userId: string): Promise<CalendarEvent[]> =>
     decodeEvents(await readJson(store, eventsKey(userId)));

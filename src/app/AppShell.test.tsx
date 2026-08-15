@@ -2,10 +2,20 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 
 import { todayCalendarDate } from '../domain/date/calendarDate';
 import { formatFullDate } from '../domain/date/format';
+import type { User } from '../domain/auth/user';
 import { createLocalAuthService } from '../services/auth/localAuthService';
+import type { AuthService } from '../services/auth/authService';
 import { createLocalEventService } from '../services/events/localEventService';
 import { createMemoryKeyValueStore } from '../services/storage/memoryKeyValueStore';
 import { AppShell } from './AppShell';
+
+const sessionOf = (service: AuthService): Promise<User | null> =>
+  new Promise(resolve => {
+    const stop = service.subscribe(user => {
+      stop();
+      resolve(user);
+    });
+  });
 
 /**
  * These exercise the real navigator, providers, and screens against in-memory
@@ -170,7 +180,7 @@ describe('creating and editing events', () => {
 
     await screen.findByText('Design review');
 
-    const user = await authService.restoreSession();
+    const user = await sessionOf(authService);
     expect(user).not.toBeNull();
     const stored = await eventService.listForUser(user?.id ?? '');
     expect(stored).toHaveLength(1);
@@ -188,7 +198,7 @@ describe('creating and editing events', () => {
       await screen.findByText('Add a title so you can recognise this event.'),
     ).toBeOnTheScreen();
 
-    const user = await authService.restoreSession();
+    const user = await sessionOf(authService);
     await expect(eventService.listForUser(user?.id ?? '')).resolves.toHaveLength(0);
   });
 
@@ -204,7 +214,7 @@ describe('creating and editing events', () => {
 
     expect(await screen.findByText('The end time must be after the start time.')).toBeOnTheScreen();
 
-    const user = await authService.restoreSession();
+    const user = await sessionOf(authService);
     await expect(eventService.listForUser(user?.id ?? '')).resolves.toHaveLength(0);
   });
 

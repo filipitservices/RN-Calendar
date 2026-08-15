@@ -8,18 +8,20 @@ import type { Result } from '../../lib/result';
 export type AuthFailure =
   | { kind: 'invalidCredentials' }
   | { kind: 'emailAlreadyRegistered' }
-  | { kind: 'storageUnavailable' };
+  | { kind: 'unavailable' };
 
 export type AuthResult = Result<User, AuthFailure>;
 
 /**
- * The seam between the app and whatever backs authentication. The MVP
- * implementation is device-local; replacing it with an HTTP client means
- * writing a new implementation of this interface and nothing else.
+ * The seam between the app and authentication. Production uses Firebase;
+ * tests inject an in-memory implementation of the same interface.
  */
 export type AuthService = {
-  /** Returns the persisted session's user, or null if nobody is signed in. */
-  restoreSession(): Promise<User | null>;
+  /**
+   * Subscribes to the current user. The first emission is the restored session
+   * (`null` if signed out). Returns an unsubscribe function.
+   */
+  subscribe(listener: (user: User | null) => void): () => void;
   register(registration: Registration): Promise<AuthResult>;
   signIn(credentials: Credentials): Promise<AuthResult>;
   signOut(): Promise<void>;

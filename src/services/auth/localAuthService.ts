@@ -10,19 +10,16 @@ const ACCOUNTS_KEY = 'auth/accounts';
 const SESSION_KEY = 'auth/session';
 
 /**
- * A registered account as persisted on the device.
- *
- * NOTE: the password is held in device-local storage in plain form. This is
- * deliberate and honest for an MVP with no backend — it is *not* a security
- * boundary, and no attempt is made to imply otherwise by hashing it locally
- * (a client-side digest with a client-side salt protects nothing). Credential
- * handling belongs on a server behind `AuthService`; because screens only ever
- * see that interface, moving it there requires no UI changes.
+ * In-memory/device-local AuthService used by tests. Production uses Firebase.
+ * Passwords here are still stored in plain form because this is a test double,
+ * not a security boundary.
  */
 type StoredAccount = {
   user: User;
   password: string;
 };
+
+type Listener = (user: User | null) => void;
 
 const decodeAccounts = (value: unknown): StoredAccount[] => {
   if (!Array.isArray(value)) {
@@ -43,24 +40,47 @@ const decodeAccounts = (value: unknown): StoredAccount[] => {
 };
 
 export const createLocalAuthService = (store: KeyValueStore): AuthService => {
+  const listeners = new Set<Listener>();
+  let epoch = 0;
+
+  const emit = (user: User | null) => {
+    epoch += 1;
+    for (const listener of listeners) {
+      listener(user);
+    }
+  };
+
   const loadAccounts = async (): Promise<StoredAccount[]> =>
     decodeAccounts(await readJson(store, ACCOUNTS_KEY));
 
   const findAccount = (accounts: readonly StoredAccount[], email: string) =>
     accounts.find(account => account.user.email === normaliseEmail(email));
 
+  const readSession = async (): Promise<User | null> => {
+    const session = await readJson(store, SESSION_KEY);
+    if (typeof session !== 'object' || session === null) {
+      return null;
+    }
+    const userId = (session as Record<string, unknown>).userId;
+    if (typeof userId !== 'string') {
+      return null;
+    }
+    const accounts = await loadAccounts();
+    return accounts.find(account => account.user.id === userId)?.user ?? null;
+  };
+
   return {
-    async restoreSession(): Promise<User | null> {
-      const session = await readJson(store, SESSION_KEY);
-      if (typeof session !== 'object' || session === null) {
-        return null;
-      }
-      const userId = (session as Record<string, unknown>).userId;
-      if (typeof userId !== 'string') {
-        return null;
-      }
-      const accounts = await loadAccounts();
-      return accounts.find(account => account.user.id === userId)?.user ?? null;
+    subscribe(listener) {
+      listeners.add(listener);
+      const started = epoch;
+      void readSession().then(user => {
+        if (started === epoch) {
+          listener(user);
+        }
+      });
+      return () => {
+        listeners.delete(listener);
+      };
     },
 
     async register(registration: Registration): Promise<AuthResult> {
@@ -82,9 +102,10 @@ export const createLocalAuthService = (store: KeyValueStore): AuthService => {
           { user, password: registration.password },
         ]);
         await writeJson(store, SESSION_KEY, { userId: user.id });
+        emit(user);
         return ok(user);
       } catch {
-        return err({ kind: 'storageUnavailable' });
+        return err({ kind: 'unavailable' });
       }
     },
 
@@ -92,22 +113,20 @@ export const createLocalAuthService = (store: KeyValueStore): AuthService => {
       try {
         const accounts = await loadAccounts();
         const account = findAccount(accounts, credentials.email);
-        // Same failure for unknown email and wrong password, so the response
-        // does not reveal which addresses are registered.
         if (account === undefined || account.password !== credentials.password) {
           return err({ kind: 'invalidCredentials' });
         }
         await writeJson(store, SESSION_KEY, { userId: account.user.id });
+        emit(account.user);
         return ok(account.user);
       } catch {
-        return err({ kind: 'storageUnavailable' });
+        return err({ kind: 'unavailable' });
       }
     },
 
     async signOut(): Promise<void> {
-      // Clears the session only; registered accounts survive so the user can
-      // sign back in.
       await store.remove(SESSION_KEY);
+      emit(null);
     },
   };
 };

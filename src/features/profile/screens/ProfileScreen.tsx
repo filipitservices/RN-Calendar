@@ -59,7 +59,8 @@ export const ProfileScreen = () => {
       </View>
 
       <Text variant="caption" color="tertiary" style={styles.footnote}>
-        Your account and events are stored on this device only.
+        Your account is stored with Firebase Authentication. Events are stored in
+        Cloud Firestore, scoped to your account.
       </Text>
     </Screen>
   );
