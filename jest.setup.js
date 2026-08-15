@@ -8,3 +8,12 @@
 jest.mock('react-native-safe-area-context', () =>
   require('react-native-safe-area-context/jest/mock').default,
 );
+
+// MMKV v4 loads Nitro at import time (via getMMKVFactory). In Jest it still
+// uses createMockMMKV, but the Nitro import would otherwise look for a native
+// TurboModule that does not exist in Node.
+jest.mock('react-native-nitro-modules', () => ({
+  NitroModules: {
+    createHybridObject: jest.fn(() => ({})),
+  },
+}));

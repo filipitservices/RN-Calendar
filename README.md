@@ -58,7 +58,8 @@ Runtime and tooling dependencies:
 | `@react-navigation/bottom-tabs` | 7.18.16 |
 | `react-native-screens` | 4.27.0 |
 | `react-native-safe-area-context` | 5.9.0 |
-| `@react-native-async-storage/async-storage` | 3.1.1 |
+| `react-native-mmkv` | 4.3.2 |
+| `react-native-nitro-modules` | 0.35.9 |
 | `jest` | 29.7.0 |
 | `@testing-library/react-native` | 14.0.1 |
 | `test-renderer` | 1.2.0 |
@@ -126,6 +127,9 @@ Enable Developer options and USB debugging, connect over USB, and confirm with `
 ```powershell
 npm install
 
+# iOS only (macOS with CocoaPods): autolinking is not enough for pods
+cd ios; pod install; cd ..
+
 # Terminal 1 - Metro
 npm start
 
@@ -133,7 +137,7 @@ npm start
 npm run android
 ```
 
-`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps.
+`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps. `react-native-mmkv` v4 is a Nitro module; Android picks it up through the existing autolinking in `android/settings.gradle`. iOS needs `pod install` after the first install or whenever the native lockfile would change. This Windows development machine has no CocoaPods, so `pod install` was not run here.
 
 ## Testing
 
@@ -144,7 +148,7 @@ npm test             # jest
 npm run test:coverage
 ```
 
-The suite has **211 tests across 14 files**, at **90.7% statement coverage** overall and effectively full coverage of `src/domain`. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
+The suite has **217 tests across 15 files**, at **91.6% statement coverage** overall and effectively full coverage of `src/domain`. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
 
 What is actually covered:
 
@@ -152,7 +156,8 @@ What is actually covered:
 - **Validation** — email shape, password rules, event title bounds, and end-before-start.
 - **Decoding** — malformed persisted records are rejected rather than trusted.
 - **The auth reducer's** state transitions, including that a late form action cannot drop an active session.
-- **Services**, against an in-memory `KeyValueStore` rather than a mocked AsyncStorage.
+- **Services**, against an in-memory `KeyValueStore` rather than a mocked native storage module.
+- **The MMKV adapter**, against the library's in-memory `createMMKV` mock: missing keys return `null`, writes round-trip, overwrite and remove behave, and a refused write (empty key) rejects.
 - **Whole-app flows** (`src/app/AppShell.test.tsx`) through the real navigator and providers: registration, invalid-credential handling, auth gating, session restore, logout, creating an event, editing it, and confirming an event stays on its own day when the selection moves.
 
 ## Building
@@ -183,7 +188,7 @@ src/
     events/       event model, validation
     auth/         user model, validation
   services/     I/O boundary - an interface plus an implementation each
-    storage/      keyValueStore (interface), asyncStorage + memory implementations
+    storage/      keyValueStore (interface), mmkv + memory implementations
     auth/         authService (interface), localAuthService
     events/       eventService (interface), localEventService
   features/
@@ -197,7 +202,7 @@ src/
   lib/          result.ts, id.ts
 ```
 
-Dependencies flow one way: `app → navigation → features → domain | services | ui | lib`. `domain` imports nothing from React or React Native, which is why it is trivially testable. Screens never touch a concrete service or AsyncStorage; they use `useAuth()` and `useEvents()`.
+Dependencies flow one way: `app → navigation → features → domain | services | ui | lib`. `domain` imports nothing from React or React Native, which is why it is trivially testable. Screens never touch a concrete service or MMKV; they use `useAuth()` and `useEvents()`.
 
 **State ownership** is explicit. `AuthProvider` owns the session via a reducer whose state is a discriminated union (`restoring | signedOut | signedIn`), so "signed in without a user" cannot be represented. `EventsProvider` owns the event list. Everything else — a day's agenda, per-day event counts — is derived during render with `useMemo`, so there is no second copy kept in sync by effects. Updates are immutable throughout.
 
@@ -220,7 +225,15 @@ Calendar apps acquire off-by-one-day bugs by storing instants and rendering civi
 
 ## Persistence and the service boundary
 
-`AuthService` and `EventService` are interfaces. The MVP implementations sit on a `KeyValueStore` interface backed by AsyncStorage, and everything read back from storage is decoded and validated — a corrupt record is dropped, not trusted and not crashed on. The concrete implementations are chosen in exactly one file, `src/app/services.ts`. Replacing them with a backend means writing new implementations of the same interfaces, with no changes to any screen. The component tests already exploit this by injecting in-memory implementations.
+`AuthService` and `EventService` are interfaces. The MVP implementations sit on a `KeyValueStore` interface, and everything read back from storage is decoded and validated — a corrupt record is dropped, not trusted and not crashed on. The concrete implementations are chosen in exactly one file, `src/app/services.ts`. Replacing them with a backend means writing new implementations of the same interfaces, with no changes to any screen. The component tests already exploit this by injecting in-memory implementations.
+
+`KeyValueStore` is the app's storage contract: `read` / `write` / `remove` over `Promise<string | null>`. Missing keys are `null`. JSON serialisation lives in `readJson` / `writeJson` above that interface, not inside the backend. The contract is async even though MMKV itself is synchronous, so auth and event services do not change when the native library does.
+
+The production backend is a single MMKV v4 instance (`createMMKV({ id: 'calendarapp' })`) in `src/services/storage/mmkvKeyValueStore.ts`. That file is the only import of `react-native-mmkv`. The instance id is the namespace; keys at the interface remain `auth/accounts`, `auth/session`, and `events/${userId}`. `set` throws (for example on an empty key) become rejected promises, which those services already map to `{ kind: 'storageUnavailable' }`. MMKV is not encrypted: encrypting the file with a key shipped in the app would imply a security boundary that still does not exist.
+
+`react-native-mmkv` 4.3.2 is a Nitro module and requires `react-native-nitro-modules` 0.35.9 (the pair 4.3.2 was published against). No extra Gradle or Podfile entries are added; Android autolinking covers the native side, and iOS needs `pod install`. Jest cannot load Nitro's TurboModule, so `jest.setup.js` stubs `react-native-nitro-modules`. MMKV then uses its own in-memory `createMockMMKV` when `JEST_WORKER_ID` is set.
+
+There is no AsyncStorage-to-MMKV data migration. This app is `0.1.0`, has never been run on a device, and the official MMKV migration sample keeps AsyncStorage plus `InteractionManager` (removed in RN 0.87). A migrator would have preserved a dependency for data that does not exist.
 
 **On credentials:** accounts are stored on the device, and the password is held in local storage in plain form. This is stated plainly rather than disguised — hashing on the client with a client-side salt would protect nothing and would only imply a security guarantee that does not exist. There is no backend, no fabricated credentials, and no security boundary here. Real credential handling belongs on a server behind `AuthService`.
 
@@ -232,11 +245,11 @@ Verified by running it:
 
 - `npx tsc --noEmit` — clean, with `strict` on and no `any`, no non-null assertions, and no error-silencing casts anywhere in `src/`.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest --coverage` — 211 tests pass; 90.7% statements overall, ~100% of `src/domain`.
-- `./gradlew assembleDebug -PreactNativeArchitectures=x86_64` — **BUILD SUCCESSFUL**, 158 tasks executed. Gradle resolved `compileSdk 37` from the installed platform; codegen ran for all three autolinked native modules; `buildCMakeDebug[x86_64]` compiled the C++; and `packageDebug` produced the APK. The two React Navigation native edits compiled cleanly (`RNScreensFragmentFactory` in `MainActivity.kt`, `android:enableOnBackInvokedCallback="false"` in the manifest).
-- `./gradlew assembleRelease -PreactNativeArchitectures=x86_64` — **BUILD SUCCESSFUL**, producing a 24.4 MB APK containing a 1.4 MB Hermes-compiled bundle.
-- `npx react-native bundle --platform android --dev false` — **succeeds**, emitting a 1.23 MB production bundle. This walks the entire Metro module graph, so every import in the app resolves for the device runtime. It is re-run after each change, and is the check that stays reproducible when the Gradle path constraint below applies.
+- `npx jest --coverage` — 217 tests pass; 91.6% statements overall, ~100% of `src/domain`.
+- `npx react-native bundle --platform android --dev false` — **succeeds** after the MMKV adapter was added. This walks the entire Metro module graph, including `react-native-mmkv`, so every import in the app resolves for the device runtime. It is the check that stays reproducible when the Gradle path constraint below applies.
 - The whole-app tests mount the real `RootNavigator`, providers, and screens, so navigation, auth gating, and the create/edit/logout flows are exercised end to end in the test suite.
+- `./gradlew assembleDebug -PreactNativeArchitectures=x86_64` — **BUILD SUCCESSFUL** on this machine before the storage backend changed (158 tasks; `compileSdk 37`; React Navigation native edits compiled). The next assemble will autolink `react-native-mmkv` and `react-native-nitro-modules`. That rebuild was not repeated in this session because of the Gradle `MAX_PATH` constraint below; it is not claimed as re-verified after MMKV.
+- `./gradlew assembleRelease` — **BUILD SUCCESSFUL** in the same pre-MMKV session (24.4 MB APK). Same caveat as debug.
 
 ### Known environment constraints
 

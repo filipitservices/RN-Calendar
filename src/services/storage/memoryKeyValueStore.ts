@@ -2,7 +2,7 @@ import type { KeyValueStore } from './keyValueStore';
 
 /**
  * In-memory implementation used by tests so service behaviour can be verified
- * without mocking the AsyncStorage native module.
+ * without loading the MMKV native module.
  */
 export const createMemoryKeyValueStore = (
   initial: Readonly<Record<string, string>> = {},
