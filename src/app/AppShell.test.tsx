@@ -3,10 +3,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { todayCalendarDate } from '../domain/date/calendarDate';
 import { formatFullDate } from '../domain/date/format';
 import type { User } from '../domain/auth/user';
-import { createLocalAuthService } from '../services/auth/localAuthService';
 import type { AuthService } from '../services/auth/authService';
-import { createLocalEventService } from '../services/events/localEventService';
-import { createMemoryKeyValueStore } from '../services/storage/memoryKeyValueStore';
+import { createTestAuthService, createTestEventService } from '../testing/fakes';
 import { AppShell } from './AppShell';
 
 const sessionOf = (service: AuthService): Promise<User | null> =>
@@ -23,11 +21,10 @@ const sessionOf = (service: AuthService): Promise<User | null> =>
  * themselves.
  */
 const renderApp = async () => {
-  const store = createMemoryKeyValueStore();
-  const authService = createLocalAuthService(store);
-  const eventService = createLocalEventService(store);
+  const authService = createTestAuthService();
+  const eventService = createTestEventService();
   await render(<AppShell authService={authService} eventService={eventService} />);
-  return { store, authService, eventService };
+  return { authService, eventService };
 };
 
 const registerNewUser = async () => {
@@ -125,9 +122,8 @@ describe('authentication gating', () => {
   });
 
   it('restores an existing session without showing the sign-in screen', async () => {
-    const store = createMemoryKeyValueStore();
-    const authService = createLocalAuthService(store);
-    const eventService = createLocalEventService(store);
+    const authService = createTestAuthService();
+    const eventService = createTestEventService();
     await authService.register({
       displayName: 'Alex Morgan',
       email: 'alex@example.com',

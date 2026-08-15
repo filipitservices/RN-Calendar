@@ -1,7 +1,6 @@
 /**
  * Device-local string store for small prefs (last email, biometric opt-in,
- * …). Auth sessions and events live on Firebase, not here. Tests use the
- * in-memory implementation of this same interface.
+ * …). Auth sessions and events live on Firebase, not here.
  */
 export type KeyValueStore = {
   read(key: string): Promise<string | null>;

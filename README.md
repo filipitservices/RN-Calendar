@@ -152,7 +152,7 @@ npm test             # jest
 npm run test:coverage
 ```
 
-The suite has **217 tests across 15 files**, at **91.88% statement coverage** overall and effectively full coverage of `src/domain`. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
+The suite has **201 tests across 14 files**, at **90.52% statement coverage** overall and effectively full coverage of `src/domain`. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
 
 What is actually covered:
 
@@ -161,7 +161,7 @@ What is actually covered:
 - **Decoding** — malformed persisted records are rejected rather than trusted.
 - **The auth reducer's** state transitions, including that a late form action cannot drop an active session.
 - **Firebase Auth error mapping** (`mapFirebaseAuthError`) — vendor codes onto the closed `AuthFailure` union.
-- **In-memory auth and event doubles**, against `KeyValueStore` rather than the native Firebase SDKs.
+- **In-memory auth and event fakes** (`src/testing/fakes/`) for whole-app tests — not the native Firebase SDKs.
 - **The MMKV adapter**, against the library's in-memory `createMMKV` mock: missing keys return `null`, writes round-trip, overwrite and remove behave, and a refused write (empty key) rejects.
 - **Whole-app flows** (`src/app/AppShell.test.tsx`) through the real navigator and providers: registration, invalid-credential handling, auth gating, session restore, logout, creating an event, editing it, and confirming an event stays on its own day when the selection moves.
 
@@ -195,9 +195,10 @@ src/
     events/       event model, validation
     auth/         user model, validation
   services/     I/O boundary - an interface plus an implementation each
-    storage/      keyValueStore, mmkv (device prefs), memory (tests)
-    auth/         authService, firebaseAuthService, localAuthService (test double)
-    events/       eventService, firestoreEventService, localEventService (test double)
+    storage/      keyValueStore, mmkv (device prefs)
+    auth/         authService, firebaseAuthService, mapFirebaseAuthError
+    events/       eventService, firestoreEventService
+  testing/      fakes/ in-memory AuthService + EventService for Jest only
   features/
     auth/         AuthProvider, authReducer, SignIn / SignUp screens
     calendar/     CalendarScreen, useCalendar, MonthGrid / DayCell / MonthNavigator / …
@@ -206,7 +207,7 @@ src/
   ui/
     theme/        colors, spacing, radii, typography, elevation
     components/   Screen, Button, TextField, Card, Text, Banner, EmptyState
-  lib/          result.ts, id.ts
+  lib/          result.ts
 ```
 
 Dependencies flow one way: `app → navigation → features → domain | services | ui | lib`. `domain` imports nothing from React or React Native, which is why it is trivially testable. Screens never touch a concrete service, MMKV, or `@react-native-firebase/*`; they use `useAuth()` and `useEvents()`.
@@ -232,7 +233,7 @@ Calendar apps acquire off-by-one-day bugs by storing instants and rendering civi
 
 ## Persistence and the service boundary
 
-`AuthService` and `EventService` are interfaces. Production bindings live in exactly one file, `src/app/services.ts`: Firebase Authentication, Cloud Firestore, and MMKV for device-local prefs. Tests inject in-memory doubles of the same interfaces via `AppShell`. Screens never import Firebase or MMKV.
+`AuthService` and `EventService` are interfaces. Production bindings live in exactly one file, `src/app/services.ts`: Firebase Authentication, Cloud Firestore, and MMKV for device-local prefs. Tests inject in-memory fakes from `src/testing/fakes/` via `AppShell`. Screens never import Firebase or MMKV.
 
 There is no JavaScript `initializeApp` and no web Firebase config. The native default app is created by the Google services Gradle plugin from `android/app/google-services.json`.
 
@@ -256,8 +257,6 @@ iOS: no `GoogleService-Info.plist` was supplied. Do not invent one, and do not c
 `User.id` is the Firebase **UID** (`asUserId(uid)`). Email is not an identifier. `displayName` is written with `updateProfile` after `createUserWithEmailAndPassword`. `createdAt` comes from `user.metadata.creationTime`, normalised to ISO at the service boundary.
 
 `AuthService.subscribe` wraps `onAuthStateChanged`. `AuthProvider` subscribes once; the existing `restoring` status covers Firebase's first callback so the sign-in screen does not flash. Passwords and tokens are not stored in the app. Firebase `error.code` values are mapped in `mapFirebaseAuthError` onto `AuthFailure` (`emailAlreadyRegistered`, `invalidCredentials`, `unavailable`).
-
-The in-memory `localAuthService` is a **test double** only. It still stores a plain password because tests are not a security boundary.
 
 ### Events (Cloud Firestore)
 
@@ -302,9 +301,9 @@ Verified by running it after the Firebase persistence change:
 
 - `npx tsc --noEmit` — clean, with `strict` on.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest --coverage` — 217 tests pass (15 files); 91.88% statements overall, ~100% of `src/domain`. Native Firebase adapters are excluded from coverage and are not executed in Jest.
+- `npx jest --coverage` — 201 tests pass (14 files); 90.52% statements overall, ~100% of `src/domain`. Native Firebase adapters are excluded from coverage and are not executed in Jest.
 - `npx react-native bundle --platform android --dev false` — **succeeds**. This walks the Metro module graph, including `@react-native-firebase/app`, `auth`, and `firestore`.
-- The whole-app tests mount the real `RootNavigator`, providers, and screens, so navigation, auth gating, and the create/edit/logout flows are exercised end to end against in-memory doubles.
+- The whole-app tests mount the real `RootNavigator`, providers, and screens, so navigation, auth gating, and the create/edit/logout flows are exercised end to end against in-memory fakes from `src/testing/fakes/`.
 - Live Email/Password + Firestore on a device is **not** claimed from this machine. `./gradlew assembleDebug` / `assembleRelease` succeeded in an earlier session before Firebase; they are not re-claimed here because of the Gradle `MAX_PATH` constraint below.
 
 ### Known environment constraints

@@ -57,11 +57,7 @@ export const ProfileScreen = () => {
           accessibilityHint="Signs you out and returns to the sign-in screen"
         />
       </View>
-
-      <Text variant="caption" color="tertiary" style={styles.footnote}>
-        Your account is stored with Firebase Authentication. Events are stored in
-        Cloud Firestore, scoped to your account.
-      </Text>
+      
     </Screen>
   );
 };

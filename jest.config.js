@@ -14,6 +14,7 @@ module.exports = {
     '!src/**/*.test-d.ts',
     '!src/**/index.ts',
     '!src/app/services.ts',
+    '!src/testing/**',
     // Native Firebase adapters: exercised on device, not in Jest.
     '!src/services/auth/firebaseAuthService.ts',
     '!src/services/events/firestoreEventService.ts',
