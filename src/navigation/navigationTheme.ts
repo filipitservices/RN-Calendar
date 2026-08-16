@@ -1,33 +1,32 @@
-import { DefaultTheme } from '@react-navigation/native';
+import { createElement } from 'react';
+import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 import type { Theme } from '@react-navigation/native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 
-import { colors, typography } from '../ui/theme';
+import type { ColorPalette } from '../ui/theme';
+import { typography } from '../ui/theme';
+import { AppearanceToggle } from './AppearanceToggle';
 
-/**
- * Maps the app's design tokens onto React Navigation's theme so navigator
- * chrome (headers, tab bar, card backgrounds) matches the rest of the UI
- * instead of falling back to platform defaults.
- */
-export const navigationTheme: Theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.accent,
-    background: colors.background,
-    card: colors.surface,
-    text: colors.textPrimary,
-    border: colors.border,
-    notification: colors.danger,
-  },
-  fonts: DefaultTheme.fonts,
+export const navigationThemeFor = (colors: ColorPalette, scheme: 'light' | 'dark'): Theme => {
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: colors.accent,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.textPrimary,
+      border: colors.border,
+      notification: colors.danger,
+    },
+  };
 };
 
-/**
- * Header styling shared by native-stack screens that show a header. Native
- * headers own the top safe-area inset; screens must not pad `top` again.
- */
-export const sharedHeaderOptions = {
+export const stackScreenOptionsFor = (
+  colors: ColorPalette,
+  scheme: 'light' | 'dark',
+): NativeStackNavigationOptions => ({
   headerStyle: { backgroundColor: colors.surface },
   headerTintColor: colors.accent,
   headerTitleStyle: {
@@ -36,17 +35,9 @@ export const sharedHeaderOptions = {
     fontWeight: typography.heading.fontWeight,
   },
   headerShadowVisible: false,
-  headerTitleAlign: 'center' as const,
-  headerBackButtonDisplayMode: 'minimal' as const,
-};
-
-/**
- * Native-stack defaults. `statusBarStyle: 'dark'` is required on Android: the
- * library default is `'light'`, which would invert icons on our light header.
- * `slide_from_right` is the documented Android-capable push animation.
- */
-export const nativeStackScreenOptions: NativeStackNavigationOptions = {
-  ...sharedHeaderOptions,
-  statusBarStyle: 'dark',
+  headerTitleAlign: 'center',
+  headerBackButtonDisplayMode: 'minimal',
+  headerRight: () => createElement(AppearanceToggle),
+  statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
   animation: 'slide_from_right',
-};
+});

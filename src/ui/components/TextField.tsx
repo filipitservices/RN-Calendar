@@ -2,14 +2,12 @@ import { useId, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import type { StyleProp, TextInputProps, TextInputInstance, ViewStyle } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../theme';
+import { radii, spacing, typography, useTheme } from '../theme';
 import { Text } from './Text';
 
 export type TextFieldProps = Omit<TextInputProps, 'style' | 'placeholderTextColor'> & {
   label: string;
-  /** Validation message. Presence of this switches the field into its error state. */
   error?: string;
-  /** Persistent guidance shown when there is no error. */
   hint?: string;
   containerStyle?: StyleProp<ViewStyle>;
   inputRef?: React.Ref<TextInputInstance>;
@@ -25,6 +23,7 @@ export const TextField = ({
   onBlur,
   ...inputProps
 }: TextFieldProps) => {
+  const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const messageId = useId();
   const message = error ?? hint;
@@ -38,8 +37,6 @@ export const TextField = ({
       <TextInput
         ref={inputRef}
         accessibilityLabel={label}
-        // Announces the validation message together with the field rather than
-        // relying on the red tint alone.
         accessibilityHint={message}
         aria-invalid={hasError}
         aria-labelledby={`${messageId}-label`}
@@ -54,8 +51,11 @@ export const TextField = ({
         }}
         style={[
           styles.input,
-          isFocused && styles.inputFocused,
-          hasError && styles.inputError,
+          {
+            borderColor: hasError ? colors.danger : isFocused ? colors.accent : colors.border,
+            backgroundColor: hasError ? colors.dangerSubtle : colors.surface,
+            color: colors.textPrimary,
+          },
           inputProps.multiline && styles.inputMultiline,
         ]}
         {...inputProps}
@@ -81,24 +81,14 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 50,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radii.md,
-    backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    color: colors.textPrimary,
     ...typography.body,
   },
   inputMultiline: {
     minHeight: 96,
     textAlignVertical: 'top',
-  },
-  inputFocused: {
-    borderColor: colors.accent,
-  },
-  inputError: {
-    borderColor: colors.danger,
-    backgroundColor: colors.dangerSubtle,
   },
   message: {
     marginTop: spacing.xs,

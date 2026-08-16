@@ -4,7 +4,7 @@ module.exports = {
   // React Navigation 7, MMKV, Nitro, and related native modules ship
   // untranspiled ESM, so they must be transformed rather than skipped.
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|react-native-screens|react-native-safe-area-context|react-native-mmkv|react-native-nitro-modules|react-native-keychain)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|react-native-screens|react-native-safe-area-context|react-native-mmkv|react-native-nitro-modules|react-native-keychain|react-native-svg|lucide-react-native)/)',
   ],
   // Ship code and test helpers only; index/config files contain no logic worth measuring.
   collectCoverageFrom: [

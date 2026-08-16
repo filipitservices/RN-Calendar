@@ -64,12 +64,14 @@ Runtime and tooling dependencies:
 | `react-native-mmkv` | 4.3.2 |
 | `react-native-nitro-modules` | 0.35.9 |
 | `react-native-keychain` | 10.0.0 |
+| `react-native-svg` | 15.15.5 |
+| `lucide-react-native` | 1.31.0 |
 | `jest` | 29.7.0 |
 | `@testing-library/react-native` | 14.0.1 |
 | `test-renderer` | 1.2.0 |
 | `eslint` | 8.57.1 |
 
-`react-native-gesture-handler` is deliberately **not** a dependency: the native stack does not require it. No state-management library, date library, icon font, or UI kit is used either.
+`react-native-gesture-handler` is deliberately **not** a dependency: the native stack does not require it. No state-management library, date library, or UI kit. Chrome icons (tabs, chevrons, appearance) are Lucide via `react-native-svg` — four named imports, not an icon font.
 
 ### React Native 0.87 specifics this project depends on
 
@@ -141,7 +143,7 @@ npm start
 npm run android
 ```
 
-`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps. React Native Firebase, `react-native-mmkv` (Nitro), and `react-native-keychain` are autolinked; Android also applies the Google services plugin in `android/app/build.gradle`. iOS needs `pod install` after the first install or whenever the native lockfile would change, **and** a real `GoogleService-Info.plist` — none is supplied, so iOS Firebase is not configured. Face ID usage text is in `ios/CalendarApp/Info.plist` for when iOS is built. This Windows development machine has no CocoaPods, so `pod install` was not run here.
+`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps. React Native Firebase, `react-native-mmkv` (Nitro), `react-native-keychain`, and `react-native-svg` are autolinked; Android also applies the Google services plugin in `android/app/build.gradle`. iOS needs `pod install` after the first install or whenever the native lockfile would change, **and** a real `GoogleService-Info.plist` — none is supplied, so iOS Firebase is not configured. Face ID usage text is in `ios/CalendarApp/Info.plist` for when iOS is built. This Windows development machine has no CocoaPods, so `pod install` was not run here.
 
 ## Testing
 
@@ -152,7 +154,7 @@ npm test             # jest
 npm run test:coverage
 ```
 
-The suite has **222 tests across 16 files**. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
+The suite has **234 tests across 17 files**. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
 
 What is actually covered:
 
@@ -209,7 +211,7 @@ src/
     profile/      ProfileScreen
   ui/
     theme/        colors, spacing, radii, typography, elevation
-    components/   Screen, Button, TextField, Card, Text, Banner, EmptyState
+    components/   Screen, Button, TextField, Card, Text, Banner
   lib/          result.ts
 ```
 
@@ -223,7 +225,7 @@ Dependencies flow one way: `app → navigation → features → domain | service
 
 One root native stack plus a nested native stack for Calendar and Profile. No bottom-tab navigator, no second header library, and no JS stack.
 
-- **Header.** React Navigation native headers on Calendar, Profile, and New event / Edit event. Sign-in and registration hide the stack header; `AuthLayout` owns their title and top safe-area inset. Shared styling lives in `sharedHeaderOptions` / `nativeStackScreenOptions` (`src/navigation/navigationTheme.ts`).
+- **Header.** React Navigation native headers on Calendar, Profile, and New event / Edit event. Sign-in and registration hide the stack header; `AuthLayout` owns their title and top safe-area inset. Shared styling lives in `stackScreenOptionsFor` (`src/navigation/navigationTheme.ts`). Authenticated headers include a compact appearance control (sun/moon); auth screens never show it.
 - **Navigation bar.** A custom bar under the nested stack (same look as before: Calendar and Profile, active/inactive tint, 44dp targets). It is not a tab navigator: it pushes and pops stack pages. The bar stays put while the pages slide; it owns the bottom safe-area inset (no fixed height).
 - **Safe areas.** `SafeAreaProvider` wraps the tree in `AppShell`. Stack headers consume the top inset on Calendar/Profile; the main nav bar consumes the bottom inset. `Screen` defaults to `left`/`right` only. Auth screens pad all edges via `AuthLayout`; event form and splash also pad `bottom` (splash pads `top` too). Insets come from `react-native-safe-area-context` 5.9.0 (`SafeAreaView` + `edges`), which updates on rotation.
 - **Transitions** (native-stack APIs, Android-capable):
@@ -233,7 +235,7 @@ One root native stack plus a nested native stack for Calendar and Profile. No bo
   - Calendar/Profile → event form: `presentation: 'modal'` + `slide_from_bottom`
   - Auth → Main: `slide_from_right` on Main (`animationTypeForReplace: 'push'`)
 
-The native-stack default `statusBarStyle` on Android is `'light'`; this app sets `'dark'` to match the light header. Deprecated `statusBarBackgroundColor` / `statusBarTranslucent` are not used (they fight RN 0.87 edge-to-edge).
+`statusBarStyle` and the root `StatusBar` follow the resolved scheme (`dark-content` on light, `light-content` on dark). Deprecated `statusBarBackgroundColor` / `statusBarTranslucent` are not used (they fight RN 0.87 edge-to-edge).
 
 The engineering standards this project is held to are written down in `.cursor/rules/`, covering architecture boundaries, TypeScript, the RN 0.87 API surface, navigation, state and data, dates, UI and accessibility, and testing.
 
@@ -284,7 +286,7 @@ Native Firebase already persists the authenticated session on device. This app d
 Biometrics are not a second identity provider. They only unlock the already-persisted Firebase session on this device.
 
 - **Off by default.** A fresh install never shows “Sign in with biometrics”. After email/password, Profile has a compact security card. Turning it on requires a successful device biometric prompt; cancelling leaves it off.
-- **What is stored.** Keychain/Keystore (`react-native-keychain` 10.0.0) holds a random nonce, username = Firebase UID, `ACCESS_CONTROL.BIOMETRY_CURRENT_SET`, this-device-only. Reading that item is the gate. MMKV holds only `prefs/lastLoggedInEmail` and `prefs/biometricUnlockUserId` (which account enabled the gate — not authorization).
+- **What is stored.** Keychain/Keystore (`react-native-keychain` 10.0.0) holds a random nonce, username = Firebase UID, `ACCESS_CONTROL.BIOMETRY_CURRENT_SET`, this-device-only. Reading that item is the gate. MMKV holds `prefs/lastLoggedInEmail`, `prefs/biometricUnlockUserId` (which account enabled the gate — not authorization), and `prefs/appearance` (see Device-local prefs).
 - **Cold start.** Firebase restores first. If there is no user, show email/password. If there is a user but this device has no matching Keychain item, open Calendar. If there is a user **and** matching config, stay on splash, prompt once, then Calendar or the password form (`locked`). Cancel, lockout, missing enrollment, or an invalid item fall back to password **without** calling Firebase `signOut`.
 - **Sign-in.** The biometric button appears only in `locked` (session still present, gate configured). It is never the only method.
 - **Log out.** Profile logout calls Firebase `signOut` and deletes the Keychain item plus the MMKV user id, so the next person must use email/password before they can enable biometrics again.
@@ -293,7 +295,10 @@ Biometrics are not a second identity provider. They only unlock the already-pers
 
 ### Device-local prefs (MMKV)
 
-Small non-secret values — last signed-in email, which user enabled biometric unlock — go through `KeyValueStore`. Production uses a single MMKV v4 instance (`createMMKV({ id: 'calendarapp' })`) in `src/services/storage/mmkvKeyValueStore.ts`. Secrets do not belong here. MMKV is not encrypted with an app-shipped key.
+Small non-secret values go through one MMKV v4 instance (`createMMKV({ id: 'calendarapp' })`) in `src/services/storage/mmkvKeyValueStore.ts`. Secrets do not belong here. MMKV is not encrypted with an app-shipped key.
+
+- **`prefs/lastLoggedInEmail`** and **`prefs/biometricUnlockUserId`** go through the async `KeyValueStore` adapter.
+- **`prefs/appearance`** is `'light'` or `'dark'` when the user has chosen an explicit look. If the key is absent, the app follows the system (`Appearance.setColorScheme('auto')`). The signed-in header control writes the opposite of the current resolved scheme; logout does not clear this key. Palette tokens (`lightColors` / `darkColors`) are applied at render via `useTheme()`.
 
 `react-native-mmkv` 4.3.2 is a Nitro module and requires `react-native-nitro-modules` 0.35.9. Android autolinking covers the native side. Jest cannot load Nitro's TurboModule, so `jest.setup.js` stubs `react-native-nitro-modules`; MMKV then uses its in-memory `createMockMMKV` when `JEST_WORKER_ID` is set.
 
@@ -330,7 +335,7 @@ Verified after adding the biometric gate:
 
 - `npx tsc --noEmit` — clean, with `strict` on.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest` — 222 tests pass (16 files), including AppShell flows for a fresh install (no biometric control), cancelled gate staying off Calendar, password fallback without signing out of Firebase, and logout clearing configuration.
+- `npx jest` — 234 tests pass (17 files), including AppShell flows for a fresh install (no biometric control), cancelled gate staying off Calendar, password fallback without signing out of Firebase, and logout clearing configuration.
 - `npx react-native bundle --platform android --dev false` — succeeds, including `react-native-keychain`.
 - Live emulator/device biometric prompts are **not** claimed (no hypervisor on this machine). Gradle assemble after Keychain is not re-claimed here if `MAX_PATH` blocks the cache.
 

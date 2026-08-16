@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radii, spacing } from '../theme';
+import { radii, spacing, useTheme } from '../theme';
 import { Text } from './Text';
 
 export type BannerProps = {
@@ -8,21 +8,24 @@ export type BannerProps = {
   message: string;
 };
 
-/**
- * Form-level feedback (submission failures, invalid credentials) as opposed to
- * per-field validation, which `TextField` renders. Announced on appearance so
- * the failure is not communicated by color alone.
- */
-export const Banner = ({ tone, message }: BannerProps) => (
-  <View
-    style={[styles.root, tone === 'danger' ? styles.danger : styles.info]}
-    accessibilityRole="alert"
-    accessibilityLiveRegion="polite">
-    <Text variant="caption" color={tone === 'danger' ? 'danger' : 'accent'}>
-      {message}
-    </Text>
-  </View>
-);
+export const Banner = ({ tone, message }: BannerProps) => {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={[
+        styles.root,
+        tone === 'danger'
+          ? { backgroundColor: colors.dangerSubtle, borderColor: colors.danger }
+          : { backgroundColor: colors.accentSubtle, borderColor: colors.accent },
+      ]}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite">
+      <Text variant="caption" color={tone === 'danger' ? 'danger' : 'accent'}>
+        {message}
+      </Text>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   root: {
@@ -30,13 +33,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-  },
-  danger: {
-    backgroundColor: colors.dangerSubtle,
-    borderColor: colors.danger,
-  },
-  info: {
-    backgroundColor: colors.accentSubtle,
-    borderColor: colors.accent,
   },
 });

@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { colors, MIN_TOUCH_TARGET, radii, spacing } from '../theme';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../theme';
 import { Text } from './Text';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -28,7 +28,29 @@ export const Button = ({
   accessibilityHint,
   style,
 }: ButtonProps) => {
+  const { colors } = useTheme();
   const isInactive = disabled || loading;
+
+  const fill = isInactive
+    ? colors.disabledSurface
+    : variant === 'primary'
+      ? colors.accent
+      : variant === 'danger'
+        ? colors.dangerSubtle
+        : variant === 'secondary'
+          ? colors.surface
+          : 'transparent';
+
+  const border =
+    isInactive
+      ? 'transparent'
+      : variant === 'secondary'
+        ? colors.borderStrong
+        : variant === 'danger'
+          ? colors.danger
+          : 'transparent';
+
+  const spinnerColor = variant === 'primary' ? colors.onAccent : colors.accent;
 
   return (
     <Pressable
@@ -41,12 +63,20 @@ export const Button = ({
       style={({ pressed }) => [
         styles.base,
         styles[size],
-        styles[variant],
-        pressed && !isInactive && pressedStyles[variant],
-        isInactive && styles.inactive,
+        {
+          backgroundColor: pressed && !isInactive
+            ? variant === 'primary'
+              ? colors.accentPressed
+              : variant === 'danger'
+                ? colors.dangerPressed
+                : variant === 'secondary'
+                  ? colors.surfaceSunken
+                  : colors.accentSubtle
+            : fill,
+          borderColor: border,
+        },
         style,
       ]}>
-      {/* The label stays mounted while loading so the button keeps its width. */}
       <Text
         variant="bodyStrong"
         color={isInactive ? 'tertiary' : labelColor[variant]}
@@ -55,7 +85,7 @@ export const Button = ({
       </Text>
       {loading ? (
         <View style={styles.spinner} pointerEvents="none">
-          <ActivityIndicator color={variant === 'primary' ? colors.onAccent : colors.accent} />
+          <ActivityIndicator color={spinnerColor} />
         </View>
       ) : null}
     </Pressable>
@@ -66,7 +96,7 @@ const labelColor = {
   primary: 'inverse',
   secondary: 'primary',
   ghost: 'accent',
-  danger: 'inverse',
+  danger: 'danger',
 } as const;
 
 const styles = StyleSheet.create({
@@ -75,16 +105,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'transparent',
     paddingHorizontal: spacing.lg,
   },
   md: { minHeight: MIN_TOUCH_TARGET },
   lg: { minHeight: 52 },
-  primary: { backgroundColor: colors.accent },
-  secondary: { backgroundColor: colors.surface, borderColor: colors.borderStrong },
-  ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: colors.danger },
-  inactive: { backgroundColor: colors.disabledSurface, borderColor: 'transparent' },
   labelHidden: { opacity: 0 },
   spinner: {
     position: 'absolute',
@@ -95,11 +119,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
-
-const pressedStyles = StyleSheet.create({
-  primary: { backgroundColor: colors.accentPressed },
-  secondary: { backgroundColor: colors.surfaceSunken },
-  ghost: { backgroundColor: colors.accentSubtle },
-  danger: { opacity: 0.85 },
 });

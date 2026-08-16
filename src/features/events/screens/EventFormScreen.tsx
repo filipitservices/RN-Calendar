@@ -7,7 +7,7 @@ import type { CalendarEvent } from '../../../domain/events/event';
 import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from '../../../domain/events/validation';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { Banner, Button, Card, Screen, Text, TextField } from '../../../ui/components';
-import { colors, spacing } from '../../../ui/theme';
+import { spacing, useTheme } from '../../../ui/theme';
 import { eventFailureMessage, useEvents } from '../EventsProvider';
 import { TimeOfDayField } from '../components/TimeOfDayField';
 import { useEventForm } from '../useEventForm';
@@ -59,6 +59,7 @@ type EventFormBodyProps = {
 };
 
 const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
+  const { colors } = useTheme();
   const { createEvent, updateEvent, deleteEvent } = useEvents();
   const form = useEventForm(date, existing);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -108,7 +109,7 @@ const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
 
   return (
     <Screen scrollable edges={['left', 'right', 'bottom']}>
-      <Card tone="flat" style={styles.dateCard}>
+      <Card tone="flat" style={[styles.dateCard, { backgroundColor: colors.surfaceSunken }]}>
         <Text variant="overline" color="tertiary">
           DATE
         </Text>
@@ -198,7 +199,6 @@ const styles = StyleSheet.create({
   dateCard: {
     marginTop: spacing.lg,
     marginBottom: spacing.lg,
-    backgroundColor: colors.surfaceSunken,
   },
   dateValue: {
     marginTop: spacing.xxs,

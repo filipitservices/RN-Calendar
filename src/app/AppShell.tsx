@@ -7,6 +7,8 @@ import { RootNavigator } from '../navigation/RootNavigator';
 import type { AuthService } from '../services/auth/authService';
 import type { BiometricUnlockService } from '../services/biometrics/biometricUnlockService';
 import type { EventService } from '../services/events/eventService';
+import { AppearanceProvider } from './AppearanceProvider';
+import { useTheme } from '../ui/theme';
 
 export type AppShellProps = {
   authService: AuthService;
@@ -14,18 +16,20 @@ export type AppShellProps = {
   biometricUnlock: BiometricUnlockService;
 };
 
-/**
- * The full application tree with its dependencies passed in. Keeping the
- * bindings out of here lets tests mount the real navigator and screens against
- * in-memory fakes from `src/testing/fakes/`, with no storage mocking.
- */
 export const AppShell = ({ authService, eventService, biometricUnlock }: AppShellProps) => (
   <SafeAreaProvider>
-    <StatusBar barStyle="dark-content" />
-    <AuthProvider service={authService} biometricUnlock={biometricUnlock}>
-      <EventsProvider service={eventService}>
-        <RootNavigator />
-      </EventsProvider>
-    </AuthProvider>
+    <AppearanceProvider>
+      <ThemedStatusBar />
+      <AuthProvider service={authService} biometricUnlock={biometricUnlock}>
+        <EventsProvider service={eventService}>
+          <RootNavigator />
+        </EventsProvider>
+      </AuthProvider>
+    </AppearanceProvider>
   </SafeAreaProvider>
 );
+
+const ThemedStatusBar = () => {
+  const { scheme } = useTheme();
+  return <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />;
+};

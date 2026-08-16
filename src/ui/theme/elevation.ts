@@ -1,26 +1,28 @@
 import { Platform } from 'react-native';
 import type { ViewStyle } from 'react-native';
 
-import { colors } from './colors';
-
 /**
  * Elevation is expressed once here because Android and iOS use different
  * mechanisms; feature code should never repeat the platform branch.
  */
-const build = (level: 1 | 2, radius: number, opacity: number): ViewStyle =>
+export const raisedElevation = (shadowColor: string): ViewStyle =>
   Platform.select<ViewStyle>({
-    android: { elevation: level * 2 },
+    android: { elevation: 2 },
     default: {
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: level },
-      shadowRadius: radius,
-      shadowOpacity: opacity,
+      shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowRadius: 6,
+      shadowOpacity: 0.06,
     },
-  });
+  }) ?? { elevation: 2 };
 
-export const elevation = {
-  /** Cards and list rows resting on the background. */
-  raised: build(1, 6, 0.06),
-  /** Sticky headers and floating actions. */
-  floating: build(2, 12, 0.1),
-} as const;
+export const floatingElevation = (shadowColor: string): ViewStyle =>
+  Platform.select<ViewStyle>({
+    android: { elevation: 4 },
+    default: {
+      shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 12,
+      shadowOpacity: 0.1,
+    },
+  }) ?? { elevation: 4 };

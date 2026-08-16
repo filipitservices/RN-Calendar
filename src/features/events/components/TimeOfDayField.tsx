@@ -6,7 +6,7 @@ import { formatTimeInput } from '../../../domain/date/format';
 import { addMinutes } from '../../../domain/date/timeOfDay';
 import type { TimeOfDay } from '../../../domain/date/timeOfDay';
 import { Card, Text } from '../../../ui/components';
-import { colors, radii, spacing } from '../../../ui/theme';
+import { radii, spacing, useTheme } from '../../../ui/theme';
 
 type StepperGroup = 'hour' | 'minute';
 
@@ -27,6 +27,7 @@ export const TimeOfDayField = ({
   disabled = false,
   containerStyle,
 }: TimeOfDayFieldProps) => {
+  const { colors } = useTheme();
   const [selected, setSelected] = useState<StepperGroup | null>(null);
   const display = formatTimeInput(value);
   const hasError = error !== undefined;
@@ -44,7 +45,16 @@ export const TimeOfDayField = ({
       <Text variant="caption" color="secondary" style={styles.label}>
         {label}
       </Text>
-      <Card tone="flat" padded={false} style={[styles.panel, hasError && styles.panelError]}>
+      <Card
+        tone="flat"
+        padded={false}
+        style={[
+          styles.panel,
+          {
+            backgroundColor: hasError ? colors.dangerSubtle : colors.surfaceSunken,
+            borderColor: hasError ? colors.danger : colors.border,
+          },
+        ]}>
         <Text
           variant="display"
           accessibilityLabel={`${label}, ${display}`}
@@ -99,15 +109,25 @@ const StepperCluster = ({
   onDecrease,
   onIncrease,
   disabled,
-}: StepperClusterProps) => (
-  <View style={[styles.cluster, selected && styles.clusterSelected]}>
+}: StepperClusterProps) => {
+  const { colors } = useTheme();
+  return (
+  <View
+    style={[
+      styles.cluster,
+      {
+        borderColor: selected ? colors.accent : colors.border,
+        backgroundColor: colors.surface,
+      },
+    ]}>
     <Text variant="overline" color="tertiary" style={styles.clusterLabel}>
       {groupLabel}
     </Text>
     <StepButton label={increaseLabel} glyph="+" onPress={onIncrease} disabled={disabled} />
     <StepButton label={decreaseLabel} glyph="−" onPress={onDecrease} disabled={disabled} />
   </View>
-);
+  );
+};
 
 type StepButtonProps = {
   label: string;
@@ -116,20 +136,29 @@ type StepButtonProps = {
   disabled: boolean;
 };
 
-const StepButton = ({ label, glyph, onPress, disabled }: StepButtonProps) => (
+const StepButton = ({ label, glyph, onPress, disabled }: StepButtonProps) => {
+  const { colors } = useTheme();
+  return (
   <Pressable
     onPress={onPress}
     disabled={disabled}
     accessibilityRole="button"
     accessibilityLabel={label}
-    style={({ pressed }) => [styles.step, pressed && styles.stepPressed, disabled && styles.stepDisabled]}>
+    style={({ pressed }) => [
+      styles.step,
+      {
+        backgroundColor: pressed ? colors.accent : colors.accentSubtle,
+        opacity: disabled ? 0.5 : 1,
+      },
+    ]}>
     {({ pressed }) => (
       <Text variant="title" color={disabled ? 'tertiary' : pressed ? 'inverse' : 'accent'}>
         {glyph}
       </Text>
     )}
   </Pressable>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   label: {
@@ -138,12 +167,8 @@ const styles = StyleSheet.create({
   },
   panel: {
     padding: spacing.md,
-    backgroundColor: colors.surfaceSunken,
     gap: spacing.md,
-  },
-  panelError: {
-    borderColor: colors.danger,
-    backgroundColor: colors.dangerSubtle,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   clock: {
     textAlign: 'center',
@@ -156,14 +181,9 @@ const styles = StyleSheet.create({
   cluster: {
     flex: 1,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radii.md,
-    backgroundColor: colors.surface,
     padding: spacing.xs,
     gap: spacing.xs,
-  },
-  clusterSelected: {
-    borderColor: colors.accent,
   },
   clusterLabel: {
     textAlign: 'center',
@@ -175,13 +195,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.md,
-    backgroundColor: colors.accentSubtle,
-  },
-  stepPressed: {
-    backgroundColor: colors.accent,
-  },
-  stepDisabled: {
-    opacity: 0.5,
   },
   message: {
     marginTop: spacing.xs,

@@ -4,6 +4,7 @@ import { parseCalendarDate } from '../../../domain/date/calendarDate';
 import type { CalendarDate } from '../../../domain/date/calendarDate';
 import { formatFullDate } from '../../../domain/date/format';
 import { buildMonthGrid } from '../../../domain/date/monthGrid';
+import { AppearanceProvider } from '../../../app/AppearanceProvider';
 import { MonthGrid } from './MonthGrid';
 
 const date = (value: string) => {
@@ -29,13 +30,15 @@ const renderGrid = async (
 ) => {
   const onSelectDate = jest.fn();
   await render(
-    <MonthGrid
-      grid={buildMonthGrid({ year: 2026, month: 8 }, 1)}
-      selected={options.selected ?? date('2026-08-15')}
-      today={date('2026-08-15')}
-      eventCounts={options.counts ?? new Map()}
-      onSelectDate={onSelectDate}
-    />,
+    <AppearanceProvider>
+      <MonthGrid
+        grid={buildMonthGrid({ year: 2026, month: 8 }, 1)}
+        selected={options.selected ?? date('2026-08-15')}
+        today={date('2026-08-15')}
+        eventCounts={options.counts ?? new Map()}
+        onSelectDate={onSelectDate}
+      />
+    </AppearanceProvider>,
   );
   return { onSelectDate };
 };

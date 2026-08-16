@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatMonthYear } from '../../../domain/date/format';
 import type { YearMonth } from '../../../domain/date/calendarDate';
-import { colors, MIN_TOUCH_TARGET, radii, spacing } from '../../../ui/theme';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../../ui/theme';
 import { Text } from '../../../ui/components';
 import { IconButton } from './IconButton';
 
@@ -22,6 +22,7 @@ export const MonthNavigator = ({
   onToday,
   showTodayShortcut,
 }: MonthNavigatorProps) => {
+  const { colors } = useTheme();
   const label = formatMonthYear(yearMonth);
 
   return (
@@ -40,10 +41,18 @@ export const MonthNavigator = ({
             onPress={onToday}
             accessibilityRole="button"
             accessibilityLabel="Go to today"
-            style={({ pressed }) => [styles.todayButton, pressed && styles.todayButtonPressed]}>
-            <Text variant="caption" color="accent" style={styles.todayLabel}>
-              Today
-            </Text>
+            style={({ pressed }) => [
+              styles.todayButton,
+              {
+                borderColor: colors.accent,
+                backgroundColor: pressed ? colors.accent : colors.accentSubtle,
+              },
+            ]}>
+            {({ pressed }) => (
+              <Text variant="caption" color={pressed ? 'inverse' : 'accent'} style={styles.todayLabel}>
+                Today
+              </Text>
+            )}
           </Pressable>
         ) : null}
         <IconButton
@@ -80,11 +89,6 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs,
     borderRadius: radii.pill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSubtle,
-  },
-  todayButtonPressed: {
-    backgroundColor: colors.accent,
   },
   todayLabel: {
     fontWeight: '600',

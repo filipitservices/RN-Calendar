@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { initialsOf } from '../../../domain/auth/user';
-import { colors, radii, spacing } from '../../../ui/theme';
+import { radii, spacing, useTheme } from '../../../ui/theme';
 import { Banner, Button, Card, Screen, Text } from '../../../ui/components';
 import { biometricFailureMessage, useAuth, useAuthenticatedUser } from '../../auth/AuthProvider';
 import { useEvents } from '../../events/EventsProvider';
 import type { SecureCredentialFailure } from '../../../services/storage/secureCredentialStore';
 
 export const ProfileScreen = () => {
+  const { colors } = useTheme();
   const user = useAuthenticatedUser();
   const {
     signOut,
@@ -44,7 +45,7 @@ export const ProfileScreen = () => {
   return (
     <Screen scrollable>
       <Card style={styles.identity}>
-        <View style={styles.avatar} accessibilityElementsHidden>
+        <View style={[styles.avatar, { backgroundColor: colors.accent }]} accessibilityElementsHidden>
           <Text variant="title" color="inverse">
             {initialsOf(user)}
           </Text>
@@ -61,7 +62,7 @@ export const ProfileScreen = () => {
 
       <Card style={styles.details}>
         <DetailRow label="Events scheduled" value={String(events.length)} />
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <DetailRow label="Member since" value={memberSince} />
       </Card>
 
@@ -78,7 +79,7 @@ export const ProfileScreen = () => {
         {canToggle ? (
           <Button
             label={biometricsEnabled ? 'Turn off' : 'Turn on'}
-            variant={biometricsEnabled ? 'secondary' : 'primary'}
+            variant={biometricsEnabled ? 'danger' : 'primary'}
             size="md"
             loading={biometricBusy}
             onPress={() => {
@@ -104,7 +105,7 @@ export const ProfileScreen = () => {
       <View style={styles.actions}>
         <Button
           label="Log out"
-          variant="secondary"
+          variant="danger"
           onPress={() => {
             void signOut();
           }}
@@ -140,7 +141,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radii.pill,
-    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -167,7 +167,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
   },
   actions: {
     marginTop: spacing.xl,

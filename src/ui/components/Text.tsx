@@ -1,8 +1,9 @@
 import { StyleSheet, Text as RNText } from 'react-native';
 import type { TextProps as RNTextProps, StyleProp, TextStyle } from 'react-native';
 
-import { colors, typography } from '../theme';
+import { typography, useTheme } from '../theme';
 import type { TypographyToken } from '../theme/typography';
+import type { ColorPalette } from '../theme';
 
 type TextColor = 'primary' | 'secondary' | 'tertiary' | 'inverse' | 'accent' | 'danger';
 
@@ -12,22 +13,27 @@ export type TextProps = RNTextProps & {
   style?: StyleProp<TextStyle>;
 };
 
-const colorFor: Record<TextColor, string> = {
-  primary: colors.textPrimary,
-  secondary: colors.textSecondary,
-  tertiary: colors.textTertiary,
-  inverse: colors.textInverse,
-  accent: colors.accent,
-  danger: colors.danger,
+const colorFor = (colors: ColorPalette, color: TextColor): string => {
+  switch (color) {
+    case 'primary':
+      return colors.textPrimary;
+    case 'secondary':
+      return colors.textSecondary;
+    case 'tertiary':
+      return colors.textTertiary;
+    case 'inverse':
+      return colors.textInverse;
+    case 'accent':
+      return colors.accent;
+    case 'danger':
+      return colors.danger;
+  }
 };
 
-/**
- * Typographic primitive. Screens use this instead of raw `Text` so font sizes,
- * weights, and text colors can only come from the theme.
- */
-export const Text = ({ variant = 'body', color = 'primary', style, ...rest }: TextProps) => (
-  <RNText style={[styles[variant], { color: colorFor[color] }, style]} {...rest} />
-);
+export const Text = ({ variant = 'body', color = 'primary', style, ...rest }: TextProps) => {
+  const { colors } = useTheme();
+  return <RNText style={[styles[variant], { color: colorFor(colors, color) }, style]} {...rest} />;
+};
 
 const styles = StyleSheet.create({
   display: typography.display,

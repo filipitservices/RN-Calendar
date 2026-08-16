@@ -4,7 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Edge } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '../theme';
+import { spacing, useTheme } from '../theme';
 
 export type ScreenProps = {
   children: ReactNode;
@@ -32,22 +32,23 @@ export const Screen = ({
   contentContainerStyle,
   style,
 }: ScreenProps) => {
+  const { colors } = useTheme();
   const bodyStyle = [padded && styles.padded, style];
 
   return (
     <SafeAreaView
       edges={edges}
-      style={[styles.root, background === 'surface' && styles.rootSurface]}>
+      style={[
+        styles.root,
+        { backgroundColor: background === 'surface' ? colors.surface : colors.background },
+      ]}>
       <KeyboardAvoidingView
         style={styles.fill}
-        // Android resizes the window itself via `adjustResize` in the manifest;
-        // adding padding on top of that double-counts the keyboard.
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {scrollable ? (
           <ScrollView
             style={styles.fill}
             contentContainerStyle={[styles.scrollContent, bodyStyle, contentContainerStyle]}
-            // RN 0.87 removed boolean support for this prop.
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag">
             {children}
@@ -63,10 +64,6 @@ export const Screen = ({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  rootSurface: {
-    backgroundColor: colors.surface,
   },
   fill: {
     flex: 1,

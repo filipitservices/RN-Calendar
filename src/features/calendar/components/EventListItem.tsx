@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { CalendarEvent } from '../../../domain/events/event';
 import { formatDuration, formatTimeRange } from '../../../domain/date/format';
-import { colors, radii, spacing } from '../../../ui/theme';
+import { radii, spacing, useTheme } from '../../../ui/theme';
 import { Text } from '../../../ui/components';
 
 export type EventListItemProps = {
@@ -12,6 +12,7 @@ export type EventListItemProps = {
 };
 
 export const EventListItem = ({ event, conflicted = false, onPress }: EventListItemProps) => {
+  const { colors } = useTheme();
   const timeRange = formatTimeRange(event.startMinutes, event.endMinutes);
   const accessibilityLabel = conflicted
     ? `${event.title}, ${timeRange}, conflicted`
@@ -23,15 +24,21 @@ export const EventListItem = ({ event, conflicted = false, onPress }: EventListI
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="Opens this event for editing"
-      style={({ pressed }) => [styles.root, pressed && styles.pressed]}>
-      <View style={styles.accent} />
+      style={({ pressed }) => [
+        styles.root,
+        {
+          backgroundColor: pressed ? colors.surfaceSunken : colors.surface,
+          borderColor: colors.border,
+        },
+      ]}>
+      <View style={[styles.accent, { backgroundColor: colors.accent }]} />
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text variant="bodyStrong" numberOfLines={1} style={styles.title}>
             {event.title}
           </Text>
           {conflicted ? (
-            <View style={styles.chip}>
+            <View style={[styles.chip, { backgroundColor: colors.dangerSubtle }]}>
               <Text variant="overline" color="danger">
                 Conflicted
               </Text>
@@ -42,7 +49,7 @@ export const EventListItem = ({ event, conflicted = false, onPress }: EventListI
           <Text variant="caption" color="secondary">
             {timeRange}
           </Text>
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.borderStrong }]} />
           <Text variant="caption" color="tertiary">
             {formatDuration(event.startMinutes, event.endMinutes)}
           </Text>
@@ -61,19 +68,13 @@ const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     overflow: 'hidden',
     minHeight: 64,
   },
-  pressed: {
-    backgroundColor: colors.surfaceSunken,
-  },
   accent: {
     width: 4,
-    backgroundColor: colors.accent,
   },
   body: {
     flex: 1,
@@ -90,7 +91,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chip: {
-    backgroundColor: colors.dangerSubtle,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
@@ -105,7 +105,6 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: radii.pill,
-    backgroundColor: colors.borderStrong,
   },
   notes: {
     marginTop: spacing.xs,

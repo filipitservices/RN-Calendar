@@ -9,6 +9,9 @@ import type { KeyValueStore } from './keyValueStore';
  */
 const INSTANCE_ID = 'calendarapp';
 
+/** The single MMKV instance. Appearance and other prefs must reuse this. */
+export const mmkv = createMMKV({ id: INSTANCE_ID });
+
 /**
  * Adapts a synchronous MMKV instance to the async string-only KeyValueStore
  * contract. Missing keys become `null` (MMKV's `getString` returns `undefined`);
@@ -25,4 +28,4 @@ export const createMmkvKeyValueStore = (storage: MMKV): KeyValueStore => ({
   },
 });
 
-export const mmkvKeyValueStore = createMmkvKeyValueStore(createMMKV({ id: INSTANCE_ID }));
+export const mmkvKeyValueStore = createMmkvKeyValueStore(mmkv);

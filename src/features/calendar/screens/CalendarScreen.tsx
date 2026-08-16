@@ -5,8 +5,8 @@ import type { CalendarDate } from '../../../domain/date/calendarDate';
 import { conflictingEventIds, countEventsByDate, eventsForDate } from '../../../domain/events/event';
 import type { CalendarEvent } from '../../../domain/events/event';
 import type { MainScreenProps } from '../../../navigation/types';
-import { Button, Card, EmptyState, Screen } from '../../../ui/components';
-import { colors, spacing } from '../../../ui/theme';
+import { Button, Card, Screen, Text } from '../../../ui/components';
+import { spacing, useTheme } from '../../../ui/theme';
 import { useEvents } from '../../events/EventsProvider';
 import { DayAgendaHeader } from '../components/DayAgendaHeader';
 import { EventListItem } from '../components/EventListItem';
@@ -15,10 +15,10 @@ import { MonthNavigator } from '../components/MonthNavigator';
 import { useCalendar } from '../useCalendar';
 
 export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
+  const { colors } = useTheme();
   const { events } = useEvents();
   const calendar = useCalendar();
 
-  // Both derived during render from the single events list — no duplicated state.
   const eventCounts = useMemo(() => countEventsByDate(events), [events]);
   const dayEvents = useMemo(
     () => eventsForDate(events, calendar.selected),
@@ -33,7 +33,6 @@ export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
     navigation.navigate('EventForm', { kind: 'edit', eventId: event.id });
 
   return (
-    // The main nav bar owns the bottom inset and the stack header owns the top.
     <Screen padded={false}>
       <View style={styles.calendarSection}>
         <MonthNavigator
@@ -52,8 +51,11 @@ export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
         />
       </View>
 
-      <Card tone="flat" padded={false} style={styles.agenda}>
-        <View style={styles.agendaHeader}>
+      <Card
+        tone="flat"
+        padded={false}
+        style={[styles.agenda, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.agendaHeader, { borderBottomColor: colors.border }]}>
           <DayAgendaHeader
             date={calendar.selected}
             today={calendar.today}
@@ -76,27 +78,23 @@ export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
-            <EmptyState
-              title="Nothing scheduled"
-              description="This day is free. Add a meeting to fill it in."
-              action={{
-                label: 'New event',
-                onPress: () => openCreateForm(calendar.selected),
-              }}
-            />
+            <View>
+              <Text variant="bodyStrong">Nothing scheduled</Text>
+              <Text variant="caption" color="secondary" style={styles.emptyCopy}>
+                This day is free. Add a meeting to fill it in.
+              </Text>
+            </View>
           }
           showsVerticalScrollIndicator={false}
         />
 
-        {dayEvents.length > 0 ? (
-          <View style={styles.actionBar}>
-            <Button
-              label="New event"
-              onPress={() => openCreateForm(calendar.selected)}
-              accessibilityHint="Creates an event on the selected day"
-            />
-          </View>
-        ) : null}
+        <View style={styles.actionBar}>
+          <Button
+            label="New event"
+            onPress={() => openCreateForm(calendar.selected)}
+            accessibilityHint="Creates an event on the selected day"
+          />
+        </View>
       </Card>
     </Screen>
   );
@@ -112,22 +110,22 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     borderBottomWidth: 0,
-    backgroundColor: colors.surface,
   },
   agendaHeader: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
   },
   listContent: {
     flexGrow: 1,
     padding: spacing.lg,
-    gap: 0,
   },
   separator: {
     height: spacing.sm,
+  },
+  emptyCopy: {
+    marginTop: spacing.xs,
   },
   actionBar: {
     paddingHorizontal: spacing.lg,

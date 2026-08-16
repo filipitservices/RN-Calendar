@@ -5,36 +5,27 @@ import { SignInScreen } from '../features/auth/screens/SignInScreen';
 import { SignUpScreen } from '../features/auth/screens/SignUpScreen';
 import { EventFormScreen } from '../features/events/screens/EventFormScreen';
 import { useAuth } from '../features/auth/AuthProvider';
+import { useTheme } from '../ui/theme';
 import { MainNavigator } from './MainNavigator';
 import { SplashScreen } from './SplashScreen';
-import { nativeStackScreenOptions, navigationTheme } from './navigationTheme';
+import { navigationThemeFor, stackScreenOptionsFor } from './navigationTheme';
 import type { RootStackParamList } from './types';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
-/**
- * Authentication gating is structural: the two groups below are mutually
- * exclusive, so an authenticated user has no route back to sign-in and a
- * signed-out user has no route into the app.
- *
- * Consequently nothing calls `navigate` when auth state changes — re-declaring
- * the screen set is what performs the transition.
- *
- * Splash is only for session restore. A configured biometric session goes to
- * Sign-in (`locked`); the user starts the prompt from that screen so Fabric is
- * not swapping splash for Calendar while BiometricPrompt closes.
- */
 export const RootNavigator = () => {
   const { state } = useAuth();
+  const { colors, scheme } = useTheme();
+  const screenOptions = stackScreenOptionsFor(colors, scheme);
 
   return (
-    <NavigationContainer theme={navigationTheme}>
-      <RootStack.Navigator screenOptions={nativeStackScreenOptions}>
+    <NavigationContainer theme={navigationThemeFor(colors, scheme)}>
+      <RootStack.Navigator screenOptions={screenOptions}>
         {state.status === 'restoring' ? (
           <RootStack.Screen
             name="Splash"
             component={SplashScreen}
-            options={{ headerShown: false, animation: 'none' }}
+            options={{ headerShown: false, animation: 'none', headerRight: undefined }}
           />
         ) : state.status === 'signedIn' ? (
           <RootStack.Group>
@@ -44,6 +35,7 @@ export const RootNavigator = () => {
               options={{
                 headerShown: false,
                 animation: 'none',
+                headerRight: undefined,
               }}
             />
             <RootStack.Screen
@@ -57,7 +49,7 @@ export const RootNavigator = () => {
             />
           </RootStack.Group>
         ) : (
-          <RootStack.Group screenOptions={{ headerShown: false }}>
+          <RootStack.Group screenOptions={{ headerShown: false, headerRight: undefined }}>
             <RootStack.Screen name="SignIn" component={SignInScreen} />
             <RootStack.Screen
               name="SignUp"
@@ -71,21 +63,10 @@ export const RootNavigator = () => {
   );
 };
 
-/**
- * Registers the root navigator's type so `useNavigation()` is typed everywhere
- * without per-call annotations. The interface lives in `@react-navigation/core`;
- * augmenting `@react-navigation/native` would silently declare a new one
- * instead of merging.
- */
 type RootStackType = typeof RootStack;
 
 declare module '@react-navigation/core' {
   interface RootNavigator extends RootStackType {}
 }
 
-/**
- * Compile-time proof that the augmentation merged. If it ever stops working,
- * `RootParamList` falls back to an empty type and this line fails to build
- * rather than silently degrading every `useNavigation()` call to `never`.
- */
 export type RegisteredRoutes = keyof ReactNavigation.RootParamList;

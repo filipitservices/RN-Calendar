@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { CalendarDate } from '../../../domain/date/calendarDate';
 import { formatDayHeading, relativeDayLabel } from '../../../domain/date/format';
-import { colors, radii, spacing } from '../../../ui/theme';
+import { radii, spacing, useTheme } from '../../../ui/theme';
 import { Text } from '../../../ui/components';
 import { IconButton } from './IconButton';
 
@@ -25,6 +25,7 @@ export const DayAgendaHeader = ({
   onPreviousDay,
   onNextDay,
 }: DayAgendaHeaderProps) => {
+  const { colors } = useTheme();
   const relative = relativeDayLabel(date, today);
 
   return (
@@ -37,7 +38,7 @@ export const DayAgendaHeader = ({
             {formatDayHeading(date)}
           </Text>
           {relative !== null ? (
-            <View style={styles.badge}>
+            <View style={[styles.badge, { backgroundColor: colors.accentSubtle }]}>
               <Text variant="overline" color="accent">
                 {relative.toUpperCase()}
               </Text>
@@ -75,6 +76,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radii.pill,
-    backgroundColor: colors.accentSubtle,
   },
 });

@@ -60,6 +60,8 @@ describe('unauthenticated area', () => {
     await renderApp();
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Sign in with biometrics' })).toBeNull();
+    expect(screen.queryByLabelText('Use dark appearance')).toBeNull();
+    expect(screen.queryByLabelText('Use light appearance')).toBeNull();
   });
 
   it('blocks sign-in with an invalid email and explains why', async () => {
@@ -111,6 +113,9 @@ describe('authentication gating', () => {
     // The sign-in screen is not merely covered, it is no longer in the tree,
     // so there is no way to navigate back to it.
     expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull();
+    expect(
+      screen.getByLabelText(/Use (dark|light) appearance/),
+    ).toBeOnTheScreen();
   });
 
   it('returns to the unauthenticated flow on log out', async () => {

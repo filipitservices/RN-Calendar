@@ -10,8 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CalendarScreen } from '../features/calendar/screens/CalendarScreen';
 import { ProfileScreen } from '../features/profile/screens/ProfileScreen';
 import { Text } from '../ui/components';
-import { colors, MIN_TOUCH_TARGET, spacing, typography } from '../ui/theme';
-import { nativeStackScreenOptions } from './navigationTheme';
+import { MIN_TOUCH_TARGET, spacing, typography, useTheme } from '../ui/theme';
+import { stackScreenOptionsFor } from './navigationTheme';
 import { TabBarIcon } from './TabBarIcon';
 import type { MainStackParamList } from './types';
 
@@ -26,12 +26,13 @@ type MainStackNav = Pick<NativeStackNavigationProp<MainStackParamList>, 'navigat
  */
 export const MainNavigator = () => {
   const nestedNavRef = useRef<MainStackNav | null>(null);
+  const { colors, scheme } = useTheme();
 
   return (
     <View style={styles.shell}>
       <View style={styles.scenes}>
         <MainStack.Navigator
-          screenOptions={nativeStackScreenOptions}
+          screenOptions={stackScreenOptionsFor(colors, scheme)}
           screenListeners={({ navigation }) => {
             nestedNavRef.current = navigation;
             return {};
@@ -77,9 +78,12 @@ const MainNavBar = ({
   nestedNavRef: { current: MainStackNav | null };
 }) => {
   const current = useNavigationState(currentMainRoute);
+  const { colors } = useTheme();
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.bar}>
+    <SafeAreaView
+      edges={['bottom', 'left', 'right']}
+      style={[styles.bar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
       <View style={styles.barInner}>
         <NavItem
           name="calendar"
@@ -141,9 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bar: {
-    backgroundColor: colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
   },
   barInner: {
     flexDirection: 'row',

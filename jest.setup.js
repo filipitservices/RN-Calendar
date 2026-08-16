@@ -17,3 +17,31 @@ jest.mock('react-native-nitro-modules', () => ({
     createHybridObject: jest.fn(() => ({})),
   },
 }));
+
+jest.mock('react-native-svg', () => {
+  const { View } = require('react-native');
+  const Mock = View;
+  return {
+    __esModule: true,
+    default: Mock,
+    Svg: Mock,
+    Path: Mock,
+    Circle: Mock,
+    Rect: Mock,
+    G: Mock,
+    Line: Mock,
+  };
+});
+
+jest.mock('lucide-react-native', () => {
+  const { View } = require('react-native');
+  const Icon = View;
+  return {
+    Sun: Icon,
+    Moon: Icon,
+    Calendar: Icon,
+    User: Icon,
+    ChevronLeft: Icon,
+    ChevronRight: Icon,
+  };
+});
