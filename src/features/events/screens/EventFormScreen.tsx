@@ -87,10 +87,10 @@ const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
     if (existing === null) {
       return;
     }
-    Alert.alert('Delete event', `Remove "${existing.title}" from your calendar?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('Delete event', `Are you sure you want to delete ${existing.title} from your calendar?`, [
+      { text: 'No', style: 'cancel' },
       {
-        text: 'Delete',
+        text: 'Yes',
         style: 'destructive',
         onPress: () => {
           void deleteEvent(existing.id).then(failure => {
@@ -128,7 +128,7 @@ const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
           autoCapitalize="sentences"
           returnKeyType="next"
           editable={!isSaving}
-          placeholder="Team sync"
+          placeholder="Enter event title here..."
         />
 
         <View style={styles.timeRow}>
@@ -161,7 +161,7 @@ const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
           value={form.fields.notes}
           onChangeText={value => form.setField('notes', value)}
           error={errorFor('notes')}
-          hint="Optional"
+          hint="(optional)"
           maxLength={NOTES_MAX_LENGTH}
           multiline
           numberOfLines={4}
