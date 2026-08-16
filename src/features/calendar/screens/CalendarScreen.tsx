@@ -32,8 +32,8 @@ export const CalendarScreen = ({ navigation }: MainTabScreenProps<'Calendar'>) =
     navigation.navigate('EventForm', { kind: 'edit', eventId: event.id });
 
   return (
-    // The tab bar owns the bottom inset, so this screen claims only the top.
-    <Screen edges={['top', 'left', 'right']} padded={false}>
+    // The tab bar owns the bottom inset and the tab header owns the top.
+    <Screen padded={false}>
       <View style={styles.calendarSection}>
         <MonthNavigator
           yearMonth={calendar.visibleMonth}

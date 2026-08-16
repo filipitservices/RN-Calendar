@@ -20,11 +20,7 @@ export const ProfileScreen = () => {
   );
 
   return (
-    <Screen scrollable edges={['top', 'left', 'right']}>
-      <Text variant="display" style={styles.title} accessibilityRole="header">
-        Profile
-      </Text>
-
+    <Screen scrollable>
       <Card style={styles.identity}>
         <View style={styles.avatar} accessibilityElementsHidden>
           <Text variant="title" color="inverse">
@@ -78,14 +74,11 @@ const DetailRow = ({ label, value }: DetailRowProps) => (
 );
 
 const styles = StyleSheet.create({
-  title: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.xl,
-  },
   identity: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
+    marginTop: spacing.lg,
   },
   avatar: {
     width: 56,
@@ -115,9 +108,5 @@ const styles = StyleSheet.create({
   },
   actions: {
     marginTop: spacing.xl,
-  },
-  footnote: {
-    marginTop: spacing.lg,
-    textAlign: 'center',
   },
 });

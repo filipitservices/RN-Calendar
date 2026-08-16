@@ -14,8 +14,9 @@ export type AuthLayoutProps = {
 };
 
 /**
- * Shared shell for the sign-in and registration screens so both have identical
- * spacing, header treatment, and footer affordance.
+ * Shared shell for the sign-in and registration screens. Auth routes hide the
+ * stack header; this layout owns the page title, top safe-area inset, and
+ * footer affordance.
  */
 export const AuthLayout = ({
   title,
@@ -25,7 +26,7 @@ export const AuthLayout = ({
   footerAction,
   onFooterPress,
 }: AuthLayoutProps) => (
-  <Screen scrollable edges={['top', 'bottom', 'left', 'right']}>
+  <Screen scrollable edges={['top', 'left', 'right', 'bottom']}>
     <View style={styles.header}>
       <View style={styles.mark} accessible={false}>
         <View style={styles.markBar} />
@@ -61,7 +62,7 @@ export const AuthLayout = ({
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
   },
   mark: {

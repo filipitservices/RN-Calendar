@@ -76,7 +76,7 @@ Runtime and tooling dependencies:
 0.87 is a breaking release, and the code is written against the new behaviour rather than working around it:
 
 - **Strict TypeScript API** is the default. All imports come from the `react-native` root; there are no `react-native/Libraries/*` deep imports and no legacy opt-out in `tsconfig.json`.
-- **Edge-to-edge is on** (`edgeToEdgeEnabled=true` in `android/gradle.properties`) and `StatusBar`'s `translucent`/`backgroundColor` props were removed. Content draws behind the system bars, so `src/ui/components/Screen.tsx` applies real safe-area insets on every screen and nothing hardcodes a bar height.
+- **Edge-to-edge is on** (`edgeToEdgeEnabled=true` in `android/gradle.properties`) and `StatusBar`'s `translucent`/`backgroundColor` props were removed. Content draws behind the system bars. Native-stack / tab **headers** own the top inset (`statusBarStyle: 'dark'` so Android icons stay dark on the light header). The tab bar owns the bottom inset. `src/ui/components/Screen.tsx` uses `react-native-safe-area-context`'s `SafeAreaView` for leftover edges only — never a hardcoded status-bar height.
 - **`keyboardShouldPersistTaps` no longer accepts booleans**, so scroll containers use `"handled"`.
 - **Ref types are `*Instance`** (`TextInputInstance`), and `StyleSheet.absoluteFillObject` is gone from the strict API.
 - Hermes on Android is built with `HERMES_ENABLE_INTL=True`, which is what lets `src/domain/date/format.ts` use `Intl.DateTimeFormat` as the single source of formatted dates.
@@ -216,6 +216,21 @@ Dependencies flow one way: `app → navigation → features → domain | service
 
 **Navigation** is typed centrally in `src/navigation/types.ts` and registered by module augmentation, so `useNavigation()` is typed everywhere without per-call annotations. The event form's params are a discriminated union (`{ kind: 'create'; date } | { kind: 'edit'; eventId }`), which makes "edit with no id" unrepresentable. Auth gating is structural: the app never calls `navigate()` in response to an auth-state change — re-declaring the screen set performs the transition.
 
+### Headers, tab bar, safe areas, and transitions
+
+One native stack and one bottom-tab navigator. No second header library and no JS stack.
+
+- **Header.** React Navigation native headers on Calendar, Profile, and New event / Edit event. Sign-in and registration hide the stack header; `AuthLayout` owns their title and top safe-area inset. Shared styling lives in `sharedHeaderOptions` / `nativeStackScreenOptions` (`src/navigation/navigationTheme.ts`).
+- **Navigation bar.** The bottom tabs are the primary authenticated destinations (Calendar, Profile). They control the navigator; active/inactive tint comes from design tokens. The bar has no fixed `height` so React Navigation can add the system bottom inset without over-growing the control. Touch targets use `MIN_TOUCH_TARGET` (44dp).
+- **Safe areas.** `SafeAreaProvider` wraps the tree in `AppShell`. Tab headers consume the top inset on Calendar/Profile; the tab bar consumes the bottom inset. `Screen` defaults to `left`/`right` only. Auth screens pad all edges via `AuthLayout`; event form and splash also pad `bottom` (splash pads `top` too). Insets come from `react-native-safe-area-context` 5.9.0 (`SafeAreaView` + `edges`), which updates on rotation.
+- **Transitions** (native-stack / bottom-tabs APIs, Android-capable):
+  - Sign in → Create account: `slide_from_right`
+  - Calendar/Profile → event form: `presentation: 'modal'` + `slide_from_bottom`
+  - Calendar ↔ Profile: no scene animation (`animation: 'none'`)
+  - Auth → Main: `fade` on Main (`animationTypeForReplace: 'push'`)
+
+The native-stack default `statusBarStyle` on Android is `'light'`; this app sets `'dark'` to match the light header. Deprecated `statusBarBackgroundColor` / `statusBarTranslucent` are not used (they fight RN 0.87 edge-to-edge).
+
 The engineering standards this project is held to are written down in `.cursor/rules/`, covering architecture boundaries, TypeScript, the RN 0.87 API surface, navigation, state and data, dates, UI and accessibility, and testing.
 
 ## The date model
@@ -297,14 +312,13 @@ There is no device-authentication code yet, and no placeholder pretending it exi
 
 ## Verification status
 
-Verified by running it after the Firebase persistence change:
+Verified by running it after the header / safe-area / transition work:
 
 - `npx tsc --noEmit` — clean, with `strict` on.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest --coverage` — 201 tests pass (14 files); 90.52% statements overall, ~100% of `src/domain`. Native Firebase adapters are excluded from coverage and are not executed in Jest.
-- `npx react-native bundle --platform android --dev false` — **succeeds**. This walks the Metro module graph, including `@react-native-firebase/app`, `auth`, and `firestore`.
-- The whole-app tests mount the real `RootNavigator`, providers, and screens, so navigation, auth gating, and the create/edit/logout flows are exercised end to end against in-memory fakes from `src/testing/fakes/`.
-- Live Email/Password + Firestore on a device is **not** claimed from this machine. `./gradlew assembleDebug` / `assembleRelease` succeeded in an earlier session before Firebase; they are not re-claimed here because of the Gradle `MAX_PATH` constraint below.
+- `npx jest` — 201 tests pass (14 files), including AppShell flows for sign-in, registration, logout, Calendar ↔ Profile tabs, and create/edit event (navigator headers included).
+- `./gradlew assembleDebug -PreactNativeArchitectures=x86_64` — **BUILD SUCCESSFUL** after these UI changes (native-stack headers, tabs, Firebase, MMKV). Use a short `GRADLE_USER_HOME` so Windows `MAX_PATH` does not trip ninja (see below).
+- Live emulator/device run is **not** claimed (no hypervisor on this machine).
 
 ### Known environment constraints
 

@@ -9,9 +9,9 @@ import { colors, spacing } from '../theme';
 export type ScreenProps = {
   children: ReactNode;
   /**
-   * Safe-area edges to pad. The app is edge-to-edge (RN 0.87 enables it by
-   * default on Android), so every screen must claim its own edges. Screens
-   * inside the tab navigator omit `bottom`, which the tab bar already owns.
+   * Safe-area edges to pad. Navigator chrome owns the rest:
+   * headers pad `top`; the tab bar pads `bottom` on tab screens.
+   * Default is left/right only so screens under a header do not double-inset.
    */
   edges?: readonly Edge[];
   /** Wraps children in a ScrollView. Use for forms and any content that can overflow. */
@@ -25,7 +25,7 @@ export type ScreenProps = {
 
 export const Screen = ({
   children,
-  edges = ['top', 'left', 'right'],
+  edges = ['left', 'right'],
   scrollable = false,
   padded = true,
   background = 'default',

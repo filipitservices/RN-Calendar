@@ -33,7 +33,7 @@ const registerNewUser = async () => {
   await fireEvent.changeText(screen.getByLabelText('Name'), 'Alex Morgan');
   await fireEvent.changeText(screen.getByLabelText('Email'), 'alex@example.com');
   await fireEvent.changeText(screen.getByLabelText('Password'), 'calendar1');
-  await fireEvent.press(screen.getByLabelText('Create account'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Create account' }));
 
   await screen.findByLabelText('Calendar tab');
 };
@@ -41,16 +41,16 @@ const registerNewUser = async () => {
 describe('unauthenticated area', () => {
   it('opens on the sign-in screen once the session check completes', async () => {
     await renderApp();
-    expect(await screen.findByLabelText('Sign in')).toBeOnTheScreen();
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeOnTheScreen();
   });
 
   it('blocks sign-in with an invalid email and explains why', async () => {
     await renderApp();
-    await screen.findByLabelText('Sign in');
+    await screen.findByRole('button', { name: 'Sign in' });
 
     await fireEvent.changeText(screen.getByLabelText('Email'), 'not-an-email');
     await fireEvent.changeText(screen.getByLabelText('Password'), 'calendar1');
-    await fireEvent.press(screen.getByLabelText('Sign in'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(await screen.findByText('Enter a valid email address.')).toBeOnTheScreen();
     // Still on the sign-in screen, not in the app.
@@ -59,11 +59,11 @@ describe('unauthenticated area', () => {
 
   it('reports invalid credentials for an account that does not exist', async () => {
     await renderApp();
-    await screen.findByLabelText('Sign in');
+    await screen.findByRole('button', { name: 'Sign in' });
 
     await fireEvent.changeText(screen.getByLabelText('Email'), 'nobody@example.com');
     await fireEvent.changeText(screen.getByLabelText('Password'), 'calendar1');
-    await fireEvent.press(screen.getByLabelText('Sign in'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(
       await screen.findByText('That email and password combination does not match an account.'),
@@ -77,7 +77,7 @@ describe('unauthenticated area', () => {
     await fireEvent.changeText(screen.getByLabelText('Name'), 'Alex Morgan');
     await fireEvent.changeText(screen.getByLabelText('Email'), 'alex@example.com');
     await fireEvent.changeText(screen.getByLabelText('Password'), 'short');
-    await fireEvent.press(screen.getByLabelText('Create account'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Create account' }));
 
     expect(await screen.findByText('Use at least 8 characters.')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Calendar tab')).toBeNull();
@@ -92,7 +92,7 @@ describe('authentication gating', () => {
     expect(screen.getByLabelText('Calendar tab')).toBeOnTheScreen();
     // The sign-in screen is not merely covered, it is no longer in the tree,
     // so there is no way to navigate back to it.
-    expect(screen.queryByLabelText('Sign in')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull();
   });
 
   it('returns to the unauthenticated flow on log out', async () => {
@@ -102,7 +102,7 @@ describe('authentication gating', () => {
     await fireEvent.press(screen.getByLabelText('Profile tab'));
     await fireEvent.press(await screen.findByLabelText('Log out'));
 
-    expect(await screen.findByLabelText('Sign in')).toBeOnTheScreen();
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeOnTheScreen();
     expect(screen.queryByLabelText('Calendar tab')).toBeNull();
   });
 
@@ -112,11 +112,11 @@ describe('authentication gating', () => {
 
     await fireEvent.press(screen.getByLabelText('Profile tab'));
     await fireEvent.press(await screen.findByLabelText('Log out'));
-    await screen.findByLabelText('Sign in');
+    await screen.findByRole('button', { name: 'Sign in' });
 
     await fireEvent.changeText(screen.getByLabelText('Email'), 'alex@example.com');
     await fireEvent.changeText(screen.getByLabelText('Password'), 'calendar1');
-    await fireEvent.press(screen.getByLabelText('Sign in'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(await screen.findByLabelText('Calendar tab')).toBeOnTheScreen();
   });

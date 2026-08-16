@@ -7,7 +7,7 @@ import { EventFormScreen } from '../features/events/screens/EventFormScreen';
 import { useAuth } from '../features/auth/AuthProvider';
 import { MainTabs } from './MainTabs';
 import { SplashScreen } from './SplashScreen';
-import { navigationTheme, sharedHeaderOptions } from './navigationTheme';
+import { nativeStackScreenOptions, navigationTheme } from './navigationTheme';
 import type { RootStackParamList } from './types';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -28,19 +28,24 @@ export const RootNavigator = () => {
       {state.status === 'restoring' ? (
         <SplashScreen />
       ) : (
-        <RootStack.Navigator screenOptions={sharedHeaderOptions}>
+        <RootStack.Navigator screenOptions={nativeStackScreenOptions}>
           {state.status === 'signedIn' ? (
             <RootStack.Group>
               <RootStack.Screen
                 name="Main"
                 component={MainTabs}
-                options={{ headerShown: false }}
+                options={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  animationTypeForReplace: 'push',
+                }}
               />
               <RootStack.Screen
                 name="EventForm"
                 component={EventFormScreen}
                 options={({ route }) => ({
                   presentation: 'modal',
+                  animation: 'slide_from_bottom',
                   title: route.params.kind === 'create' ? 'New event' : 'Edit event',
                 })}
               />

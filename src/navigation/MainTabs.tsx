@@ -3,20 +3,24 @@ import { StyleSheet } from 'react-native';
 
 import { CalendarScreen } from '../features/calendar/screens/CalendarScreen';
 import { ProfileScreen } from '../features/profile/screens/ProfileScreen';
-import { colors, spacing, typography } from '../ui/theme';
+import { colors, MIN_TOUCH_TARGET, spacing, typography } from '../ui/theme';
 import { TabBarIcon } from './TabBarIcon';
+import { sharedHeaderOptions } from './navigationTheme';
 import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 /**
- * The authenticated area. Screens render their own headers, so the tab
- * navigator's header is disabled to avoid stacking two title bars.
+ * Authenticated primary destinations. The tab navigator owns the screen
+ * header (top inset) and the tab bar (bottom inset).
  */
 export const MainTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      headerShown: false,
+      ...sharedHeaderOptions,
+      headerShown: true,
+      animation: 'none',
+      tabBarHideOnKeyboard: true,
       tabBarActiveTintColor: colors.accent,
       tabBarInactiveTintColor: colors.textTertiary,
       tabBarStyle: styles.tabBar,
@@ -27,6 +31,7 @@ export const MainTabs = () => (
       name="Calendar"
       component={CalendarScreen}
       options={{
+        title: 'Calendar',
         tabBarLabel: 'Calendar',
         tabBarAccessibilityLabel: 'Calendar tab',
         tabBarIcon: ({ focused }) => <TabBarIcon name="calendar" focused={focused} />,
@@ -36,6 +41,7 @@ export const MainTabs = () => (
       name="Profile"
       component={ProfileScreen}
       options={{
+        title: 'Profile',
         tabBarLabel: 'Profile',
         tabBarAccessibilityLabel: 'Profile tab',
         tabBarIcon: ({ focused }) => <TabBarIcon name="profile" focused={focused} />,
@@ -48,12 +54,10 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
-    // The navigator adds the bottom safe-area inset on top of this height,
-    // so no device-specific padding is hardcoded here.
-    height: 60,
     paddingTop: spacing.sm,
   },
   tabItem: {
+    minHeight: MIN_TOUCH_TARGET,
     paddingVertical: spacing.xxs,
   },
   tabLabel: {

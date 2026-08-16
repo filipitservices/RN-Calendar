@@ -28,7 +28,7 @@ export const EventFormScreen = ({ route, navigation }: RootStackScreenProps<'Eve
   // screen is mounted, so this is a real state to handle, not a bug.
   if (date === null) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right', 'bottom']}>
         <View style={styles.missing}>
           <Text variant="heading" style={styles.missingText}>
             This event is no longer available.
