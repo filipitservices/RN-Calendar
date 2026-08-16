@@ -36,25 +36,3 @@ export const initialsOf = (user: User): string => {
 
   return initials.length > 0 ? initials.toUpperCase() : user.email.slice(0, 2).toUpperCase();
 };
-
-export const decodeUser = (value: unknown): User | null => {
-  if (typeof value !== 'object' || value === null) {
-    return null;
-  }
-  const record = value as Record<string, unknown>;
-  if (
-    typeof record.id !== 'string' ||
-    record.id.length === 0 ||
-    typeof record.email !== 'string' ||
-    typeof record.displayName !== 'string' ||
-    typeof record.createdAt !== 'string'
-  ) {
-    return null;
-  }
-  return {
-    id: asUserId(record.id),
-    email: record.email,
-    displayName: record.displayName,
-    createdAt: record.createdAt,
-  };
-};

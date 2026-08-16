@@ -28,23 +28,6 @@ export const timeOfDayFromParts = (hours: number, minutes: number): TimeOfDay =>
 export const parseTimeOfDay = (value: unknown): TimeOfDay | null =>
   isTimeOfDay(value) ? value : null;
 
-/**
- * Parses user text in `HH:MM` (24-hour) form. Returns null for anything else,
- * which the form layer turns into a validation message.
- */
-export const parseTimeInput = (input: string): TimeOfDay | null => {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(input.trim());
-  if (match === null) {
-    return null;
-  }
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (hours > 23 || minutes > 59) {
-    return null;
-  }
-  return timeOfDayFromParts(hours, minutes);
-};
-
 export const hoursOf = (time: TimeOfDay): number => Math.floor(time / 60);
 
 export const minutesOf = (time: TimeOfDay): number => time % 60;

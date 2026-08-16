@@ -2,7 +2,6 @@ import {
   addDays,
   calendarDateFromParts,
   dayOfWeek,
-  daysInMonth,
   isSameYearMonth,
   toYearMonth,
 } from './calendarDate';
@@ -66,7 +65,3 @@ export const buildMonthGrid = (yearMonth: YearMonth, weekStart: WeekStart = 1): 
  */
 export const weekdayOrder = (weekStart: WeekStart): readonly number[] =>
   Array.from({ length: DAYS_PER_WEEK }, (_, index) => (weekStart + index) % DAYS_PER_WEEK);
-
-/** Clamps a day-of-month so navigating from 31 Jan to February lands on a real date. */
-export const clampDayToMonth = (yearMonth: YearMonth, day: number): CalendarDate =>
-  calendarDateFromParts({ ...yearMonth, day: Math.min(day, daysInMonth(yearMonth)) });

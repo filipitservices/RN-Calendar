@@ -3,7 +3,6 @@ import {
   addMinutes,
   hoursOf,
   minutesOf,
-  parseTimeInput,
   parseTimeOfDay,
   timeOfDayFromParts,
 } from './timeOfDay';
@@ -19,25 +18,6 @@ describe('timeOfDayFromParts', () => {
     expect(() => timeOfDayFromParts(24, 0)).toThrow();
     expect(() => timeOfDayFromParts(-1, 0)).toThrow();
   });
-});
-
-describe('parseTimeInput', () => {
-  it.each([
-    ['09:30', 570],
-    ['9:30', 570],
-    ['00:00', 0],
-    ['23:59', 1439],
-    ['  10:15  ', 615],
-  ])('parses %p', (input, expected) => {
-    expect(parseTimeInput(input)).toBe(expected);
-  });
-
-  it.each(['24:00', '12:60', '9.30', '930', '', 'noon', '12:5', '1:2:3'])(
-    'rejects %p',
-    input => {
-      expect(parseTimeInput(input)).toBeNull();
-    },
-  );
 });
 
 describe('parseTimeOfDay', () => {

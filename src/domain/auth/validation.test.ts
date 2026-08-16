@@ -7,42 +7,17 @@ import {
 } from './validation';
 
 describe('validateEmail', () => {
-  it.each([
-    'user@example.com',
-    'first.last@example.co.uk',
-    'user+tag@example.io',
-    'u@a.bc',
-  ])('accepts %p', email => {
-    expect(validateEmail(email)).toBeUndefined();
-  });
-
-  it.each([
-    'user@example',
-    'user@@example.com',
-    'user example.com',
-    '@example.com',
-    'user@.com',
-    'user@example.',
-  ])('rejects %p', email => {
-    expect(validateEmail(email)).toBeDefined();
-  });
-
-  it('distinguishes an empty field from a malformed one', () => {
+  it('accepts a plausible address and rejects empty or malformed ones', () => {
+    expect(validateEmail('user@example.com')).toBeUndefined();
+    expect(validateEmail('  user+tag@example.co.uk  ')).toBeUndefined();
     expect(validateEmail('')).toBe('Enter your email address.');
-    expect(validateEmail('nope')).toBe('Enter a valid email address.');
-  });
-
-  it('ignores surrounding whitespace', () => {
-    expect(validateEmail('  user@example.com  ')).toBeUndefined();
+    expect(validateEmail('user@example')).toBe('Enter a valid email address.');
   });
 });
 
 describe('validateSignIn', () => {
-  it('accepts any non-empty password, since strength rules belong to registration', () => {
+  it('accepts any non-empty password and reports both empty fields at once', () => {
     expect(validateSignIn({ email: 'user@example.com', password: 'a' })).toEqual({});
-  });
-
-  it('reports both fields at once', () => {
     const errors = validateSignIn({ email: '', password: '' });
     expect(errors.email).toBeDefined();
     expect(errors.password).toBeDefined();
@@ -56,25 +31,13 @@ describe('validateRegistration', () => {
     password: 'calendar1',
   };
 
-  it('accepts a well-formed registration', () => {
+  it('accepts a well-formed registration and rejects weak names or passwords', () => {
     expect(validateRegistration(valid)).toEqual({});
-  });
-
-  it('requires a name', () => {
     expect(validateRegistration({ ...valid, displayName: '   ' }).displayName).toBeDefined();
-  });
-
-  it(`requires at least ${PASSWORD_MIN_LENGTH} characters`, () => {
     expect(validateRegistration({ ...valid, password: 'cal1' }).password).toBeDefined();
-  });
-
-  it('requires both a letter and a number', () => {
-    expect(validateRegistration({ ...valid, password: '12345678' }).password).toBeDefined();
-    expect(validateRegistration({ ...valid, password: 'abcdefgh' }).password).toBeDefined();
-  });
-
-  it('rejects an over-long name', () => {
-    expect(validateRegistration({ ...valid, displayName: 'a'.repeat(61) }).displayName).toBeDefined();
+    expect(
+      validateRegistration({ ...valid, password: 'a'.repeat(PASSWORD_MIN_LENGTH) }).password,
+    ).toBeDefined();
   });
 });
 

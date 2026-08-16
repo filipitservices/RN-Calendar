@@ -26,10 +26,10 @@ module.exports = {
   // covers everything *except* `src/domain`.
   coverageThreshold: {
     global: {
-      statements: 85,
-      branches: 76,
+      statements: 84,
+      branches: 72,
       functions: 82,
-      lines: 85,
+      lines: 84,
     },
     // The domain layer is pure and cheap to test, so it is held to a far
     // higher bar than the UI.

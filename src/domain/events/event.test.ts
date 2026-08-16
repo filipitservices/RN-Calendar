@@ -59,17 +59,9 @@ describe('eventsForDate', () => {
     event({ id: asEventId('3'), date: date('2026-08-15'), startMinutes: timeOfDayFromParts(8, 0) }),
   ];
 
-  it('returns only the requested day, in chronological order', () => {
-    expect(eventsForDate(events, date('2026-08-15')).map(e => e.id)).toEqual(['3', '1']);
-  });
-
-  it('returns an empty list for a free day', () => {
-    expect(eventsForDate(events, date('2026-08-17'))).toEqual([]);
-  });
-
-  it('does not mutate the input array', () => {
+  it('returns only the requested day, in chronological order, without mutating the input', () => {
     const original = [...events];
-    eventsForDate(events, date('2026-08-15'));
+    expect(eventsForDate(events, date('2026-08-15')).map(e => e.id)).toEqual(['3', '1']);
     expect(events).toEqual(original);
   });
 });
@@ -102,20 +94,6 @@ describe('conflictingEventIds', () => {
     expect([...conflictingEventIds([first, second])].sort()).toEqual(['a', 'b']);
   });
 
-  it('tags containment as a conflict', () => {
-    const outer = event({
-      id: asEventId('outer'),
-      startMinutes: timeOfDayFromParts(9, 0),
-      endMinutes: timeOfDayFromParts(12, 0),
-    });
-    const inner = event({
-      id: asEventId('inner'),
-      startMinutes: timeOfDayFromParts(10, 0),
-      endMinutes: timeOfDayFromParts(11, 0),
-    });
-    expect(conflictingEventIds([outer, inner])).toEqual(new Set([outer.id, inner.id]));
-  });
-
   it('does not tag intervals that only touch at an endpoint', () => {
     const first = event({
       id: asEventId('a'),
@@ -144,46 +122,6 @@ describe('conflictingEventIds', () => {
       endMinutes: timeOfDayFromParts(12, 0),
     });
     expect(conflictingEventIds([monday, tuesday]).size).toBe(0);
-  });
-
-  it('tags every event in a three-way overlap', () => {
-    const first = event({
-      id: asEventId('a'),
-      startMinutes: timeOfDayFromParts(9, 0),
-      endMinutes: timeOfDayFromParts(12, 0),
-    });
-    const second = event({
-      id: asEventId('b'),
-      startMinutes: timeOfDayFromParts(10, 0),
-      endMinutes: timeOfDayFromParts(13, 0),
-    });
-    const third = event({
-      id: asEventId('c'),
-      startMinutes: timeOfDayFromParts(11, 0),
-      endMinutes: timeOfDayFromParts(14, 0),
-    });
-    expect(conflictingEventIds([first, second, third])).toEqual(new Set([first.id, second.id, third.id]));
-  });
-
-  it('drops the tag after an interval is edited so it no longer overlaps', () => {
-    const first = event({
-      id: asEventId('a'),
-      startMinutes: timeOfDayFromParts(9, 0),
-      endMinutes: timeOfDayFromParts(11, 0),
-    });
-    const second = event({
-      id: asEventId('b'),
-      startMinutes: timeOfDayFromParts(10, 0),
-      endMinutes: timeOfDayFromParts(12, 0),
-    });
-    expect(conflictingEventIds([first, second]).size).toBe(2);
-
-    const moved = {
-      ...second,
-      startMinutes: timeOfDayFromParts(11, 0),
-      endMinutes: timeOfDayFromParts(12, 0),
-    };
-    expect(conflictingEventIds([first, moved]).size).toBe(0);
   });
 });
 

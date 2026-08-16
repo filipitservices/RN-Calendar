@@ -4,7 +4,6 @@ import {
   DAYS_PER_WEEK,
   WEEKS_PER_GRID,
   buildMonthGrid,
-  clampDayToMonth,
   weekdayOrder,
 } from './monthGrid';
 
@@ -91,16 +90,5 @@ describe('weekdayOrder', () => {
   it('rotates to the configured week start', () => {
     expect(weekdayOrder(1)).toEqual([1, 2, 3, 4, 5, 6, 0]);
     expect(weekdayOrder(0)).toEqual([0, 1, 2, 3, 4, 5, 6]);
-  });
-});
-
-describe('clampDayToMonth', () => {
-  it('clamps to the last day of a shorter month', () => {
-    expect(clampDayToMonth({ year: 2026, month: 2 }, 31)).toBe('2026-02-28');
-    expect(clampDayToMonth({ year: 2024, month: 2 }, 31)).toBe('2024-02-29');
-  });
-
-  it('leaves a valid day untouched', () => {
-    expect(clampDayToMonth({ year: 2026, month: 8 }, 15)).toBe('2026-08-15');
   });
 });

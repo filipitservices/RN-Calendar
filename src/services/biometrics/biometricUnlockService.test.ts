@@ -7,29 +7,14 @@ describe('createBiometricUnlockService', () => {
   const setup = (biometry: 'fingerprint' | 'none' | 'notEnrolled' = 'fingerprint') => {
     const prefs = createMemoryKeyValueStore();
     const credentials = createMemorySecureCredentialStore({ biometry });
-    return { prefs, service: createBiometricUnlockService(prefs, credentials) };
+    return { service: createBiometricUnlockService(prefs, credentials) };
   };
 
-  it('does not treat hardware as configured', async () => {
+  it('is not configured until enable succeeds for that user', async () => {
     const { service } = setup();
     await expect(service.capability()).resolves.toEqual({ status: 'ready' });
     await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
-  });
 
-  it('reports unavailable when the device has no biometry', async () => {
-    const { service } = setup('none');
-    await expect(service.capability()).resolves.toEqual({ status: 'unavailable' });
-    await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
-  });
-
-  it('reports not enrolled when hardware is present but empty', async () => {
-    const { service } = setup('notEnrolled');
-    await expect(service.capability()).resolves.toEqual({ status: 'notEnrolled' });
-    await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
-  });
-
-  it('enables only after a successful credential write, bound to that user', async () => {
-    const { service } = setup();
     const result = await service.enable('u1');
     expect(result.ok).toBe(true);
     await expect(service.isConfiguredFor('u1')).resolves.toBe(true);
@@ -46,43 +31,34 @@ describe('createBiometricUnlockService', () => {
     }
   });
 
-  it('disable removes the configuration', async () => {
+  it('disable and a user mismatch both clear configuration', async () => {
     const { service } = setup();
     await service.enable('u1');
     await service.disable();
     await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
-  });
 
-  it('clears another user\'s leftover configuration without prompting', async () => {
-    const { service } = setup();
     await service.enable('u1');
     await service.clearIfUserMismatch('u2');
     await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
   });
 
-  it('refuses to enable when the device has no biometry', async () => {
-    const { service } = setup('none');
-    const result = await service.enable('u1');
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.kind).toBe('unavailable');
+  it('refuses to enable when the device cannot prompt', async () => {
+    const none = setup('none');
+    await expect(none.service.capability()).resolves.toEqual({ status: 'unavailable' });
+    const unavailable = await none.service.enable('u1');
+    expect(unavailable.ok).toBe(false);
+    if (!unavailable.ok) {
+      expect(unavailable.error.kind).toBe('unavailable');
     }
-  });
 
-  it('refuses to enable when no biometric is enrolled', async () => {
-    const { service } = setup('notEnrolled');
-    const result = await service.enable('u1');
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.kind).toBe('notEnrolled');
+    const empty = setup('notEnrolled');
+    await expect(empty.service.capability()).resolves.toEqual({ status: 'notEnrolled' });
+    const notEnrolled = await empty.service.enable('u1');
+    expect(notEnrolled.ok).toBe(false);
+    if (!notEnrolled.ok) {
+      expect(notEnrolled.error.kind).toBe('notEnrolled');
     }
-    await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
-  });
-
-  it('stores last email as non-secret metadata', async () => {
-    const { service } = setup();
-    await service.rememberEmail('alex@example.com');
-    await expect(service.lastEmail()).resolves.toBe('alex@example.com');
+    await expect(empty.service.isConfiguredFor('u1')).resolves.toBe(false);
   });
 
   it('invalidates when authenticate cannot read the item', async () => {

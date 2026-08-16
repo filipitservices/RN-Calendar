@@ -132,12 +132,6 @@ export const addMonths = (yearMonth: YearMonth, amount: number): YearMonth => {
   return { year: Math.floor(zeroBased / 12), month: (zeroBased % 12) + 1 };
 };
 
-export const addMonthsToDate = (date: CalendarDate, amount: number): CalendarDate => {
-  const { day, ...yearMonth } = toDateParts(date);
-  const shifted = addMonths(yearMonth, amount);
-  return calendarDateFromParts({ ...shifted, day: Math.min(day, daysInMonth(shifted)) });
-};
-
 export const isSameYearMonth = (a: YearMonth, b: YearMonth): boolean =>
   a.year === b.year && a.month === b.month;
 

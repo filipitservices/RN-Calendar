@@ -154,7 +154,7 @@ npm test             # jest
 npm run test:coverage
 ```
 
-The suite has **234 tests across 17 files**. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
+The suite has **125 tests across 16 Jest files** (plus `src/navigation/types.test-d.ts`, typecheck only). `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
 
 What is actually covered:
 
@@ -162,12 +162,13 @@ What is actually covered:
 - **Validation** — email shape, password rules, event title bounds, and end-before-start.
 - **Decoding** — malformed persisted records are rejected rather than trusted.
 - **The auth reducer's** state transitions, including that a late form action cannot drop an active session.
-- **Firebase Auth error mapping** (`mapFirebaseAuthError`) — vendor codes onto the closed `AuthFailure` union.
-- **Keychain/BiometricPrompt error mapping** (`mapSecureCredentialError`).
-- **Biometric unlock service** against in-memory prefs and a Keychain fake.
+- **Firebase Auth error mapping** (`mapFirebaseAuthError`) — vendor codes onto the closed `AuthFailure` union, including collapsing `user-not-found` / `wrong-password` to `invalidCredentials`.
+- **Keychain/BiometricPrompt error mapping** (`mapSecureCredentialError`), including Android cancel `10` vs unavailable `1`.
+- **Biometric unlock service** against in-memory prefs and a Keychain fake (enable bound to user, authenticate, disable, mismatch, invalidated secret).
 - **In-memory auth and event fakes** (`src/testing/fakes/`) for whole-app tests — not the native Firebase SDKs.
-- **The MMKV adapter**, against the library's in-memory `createMMKV` mock: missing keys return `null`, writes round-trip, overwrite and remove behave, and a refused write (empty key) rejects.
-- **Whole-app flows** (`src/app/AppShell.test.tsx`) through the real navigator and providers: registration, invalid-credential handling, auth gating, session restore, logout, creating an event, editing it, and confirming an event stays on its own day when the selection moves.
+- **The MMKV adapter**, against the library's in-memory `createMMKV` mock: missing keys return `null`, writes round-trip, and a refused write (empty key) rejects.
+- **Month grid UI** — press reports the civil date (including a borrowed day), selected state via accessibility, event-count hint. Grid geometry lives in domain tests.
+- **Whole-app flows** (`src/app/AppShell.test.tsx`) through the real navigator and providers: fresh install, invalid credentials from the service, registration, logout and sign-in again, session restore, create/edit events (including persistence), civil-day stability, month paging vs Today, and the biometric gate (cancel stays off Calendar; Profile enable then logout clears the control).
 
 Native `firebaseAuthService` / `firestoreEventService` are excluded from coverage. They require the Android Firebase SDK. Use the Firebase Console rules simulator to check `firestore.rules`; this repo does not run an emulator suite.
 
@@ -335,7 +336,7 @@ Verified after adding the biometric gate:
 
 - `npx tsc --noEmit` — clean, with `strict` on.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest` — 234 tests pass (17 files), including AppShell flows for a fresh install (no biometric control), cancelled gate staying off Calendar, password fallback without signing out of Firebase, and logout clearing configuration.
+- `npx jest` — 125 tests pass (16 files), including AppShell flows for a fresh install (no biometric control), cancelled gate staying off Calendar, password fallback without signing out of Firebase, and logout clearing configuration.
 - `npx react-native bundle --platform android --dev false` — succeeds, including `react-native-keychain`.
 - Live emulator/device biometric prompts are **not** claimed (no hypervisor on this machine). Gradle assemble after Keychain is not re-claimed here if `MAX_PATH` blocks the cache.
 

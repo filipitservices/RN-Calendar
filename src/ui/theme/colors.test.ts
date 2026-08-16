@@ -1,16 +1,10 @@
 import { appearanceOverride } from './colors';
 
 describe('appearanceOverride', () => {
-  it('follows the system when nothing is stored', () => {
+  it('maps stored light/dark and treats anything else as follow-system', () => {
     expect(appearanceOverride(undefined)).toBe('auto');
-  });
-
-  it('maps an explicit stored choice', () => {
     expect(appearanceOverride('light')).toBe('light');
     expect(appearanceOverride('dark')).toBe('dark');
-  });
-
-  it('treats unrecognised values as follow-system', () => {
     expect(appearanceOverride('auto')).toBe('auto');
     expect(appearanceOverride('')).toBe('auto');
   });

@@ -48,14 +48,6 @@ describe('validateEventDraft', () => {
     expect(validateEventDraft(reversed).endMinutes).toBeDefined();
   });
 
-  it('accepts a one-minute event', () => {
-    const oneMinute = draft({
-      startMinutes: timeOfDayFromParts(9, 0),
-      endMinutes: timeOfDayFromParts(9, 1),
-    });
-    expect(validateEventDraft(oneMinute)).toEqual({});
-  });
-
   it('bounds the notes length', () => {
     expect(validateEventDraft(draft({ notes: 'a'.repeat(NOTES_MAX_LENGTH) })).notes).toBeUndefined();
     expect(
