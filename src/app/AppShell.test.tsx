@@ -334,6 +334,44 @@ describe('biometric gate', () => {
     expect(screen.queryByLabelText('Calendar tab')).toBeNull();
   });
 
+  it('does not open the biometric prompt until Sign in with biometrics is pressed', async () => {
+    const authService = createTestAuthService();
+    const eventService = createTestEventService();
+    let getCalls = 0;
+    const biometricUnlock = createTestBiometricUnlockService({
+      biometry: 'fingerprint',
+      onGet: () => {
+        getCalls += 1;
+        return err({ kind: 'cancelled' });
+      },
+    });
+    await authService.register({
+      displayName: 'Alex Morgan',
+      email: 'alex@example.com',
+      password: 'calendar1',
+    });
+    const user = await sessionOf(authService);
+    if (user !== null) {
+      await biometricUnlock.enable(user.id);
+    }
+
+    await render(
+      <AppShell
+        authService={authService}
+        eventService={eventService}
+        biometricUnlock={biometricUnlock}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Sign in with biometrics' })).toBeOnTheScreen();
+    expect(getCalls).toBe(0);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in with biometrics' }));
+    expect(await screen.findByText('Biometric sign-in was cancelled. You can use your password instead.')).toBeOnTheScreen();
+    expect(getCalls).toBe(1);
+    expect(screen.queryByLabelText('Calendar tab')).toBeNull();
+  });
+
   it('lets password sign-in continue while the Firebase session is still present', async () => {
     const authService = createTestAuthService();
     const eventService = createTestEventService();

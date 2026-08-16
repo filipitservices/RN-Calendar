@@ -23,6 +23,7 @@ export type MainStackParamList = {
 };
 
 export type RootStackParamList = {
+  Splash: undefined;
   // Unauthenticated group
   SignIn: undefined;
   SignUp: undefined;

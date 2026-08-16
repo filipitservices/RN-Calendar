@@ -4,8 +4,8 @@ import type { SecureCredentialFailure } from '../../services/storage/secureCrede
 
 /**
  * Session state as a discriminated union. Calendar is only represented by
- * signedIn; unlocking never mounts it, and locked keeps the Firebase user
- * without exposing the app.
+ * signedIn. `unlocking` is unused by the live gate (the prompt runs on Sign-in
+ * while `locked`). locked keeps the Firebase user without exposing the app.
  */
 export type AuthState =
   | { status: 'restoring' }

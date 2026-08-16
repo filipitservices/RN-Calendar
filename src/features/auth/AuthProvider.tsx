@@ -68,7 +68,8 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
   const runGate = useCallback(
     async (user: User) => {
       const generation = generationRef.current;
-      dispatch({ type: 'unlockStarted', user });
+      // Stay on Sign-in while the system prompt is up. Going to `unlocking`
+      // unmounts that screen under BiometricPrompt and Fabric loses view tags.
       const result = await biometricUnlock.authenticate();
       if (generation !== generationRef.current) {
         return;
@@ -128,10 +129,10 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
           dispatch({ type: 'restored', user });
           return;
         }
-        await runGate(user);
+        dispatch({ type: 'locked', user, gateFailure: null });
       })();
     });
-  }, [applyAuthenticated, biometricUnlock, runGate, service]);
+  }, [applyAuthenticated, biometricUnlock, service]);
 
   const register = useCallback(
     async (registration: Registration) => {

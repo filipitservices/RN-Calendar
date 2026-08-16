@@ -19,49 +19,54 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
  *
  * Consequently nothing calls `navigate` when auth state changes — re-declaring
  * the screen set is what performs the transition.
+ *
+ * Splash is only for session restore. A configured biometric session goes to
+ * Sign-in (`locked`); the user starts the prompt from that screen so Fabric is
+ * not swapping splash for Calendar while BiometricPrompt closes.
  */
 export const RootNavigator = () => {
   const { state } = useAuth();
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      {state.status === 'restoring' || state.status === 'unlocking' ? (
-        <SplashScreen />
-      ) : (
-        <RootStack.Navigator screenOptions={nativeStackScreenOptions}>
-          {state.status === 'signedIn' ? (
-            <RootStack.Group>
-              <RootStack.Screen
-                name="Main"
-                component={MainNavigator}
-                options={{
-                  headerShown: false,
-                  animation: 'slide_from_right',
-                  animationTypeForReplace: 'push',
-                }}
-              />
-              <RootStack.Screen
-                name="EventForm"
-                component={EventFormScreen}
-                options={({ route }) => ({
-                  presentation: 'modal',
-                  animation: 'slide_from_bottom',
-                  title: route.params.kind === 'create' ? 'New event' : 'Edit event',
-                })}
-              />
-            </RootStack.Group>
-          ) : (
-            <RootStack.Group screenOptions={{ headerShown: false }}>
-              <RootStack.Screen name="SignIn" component={SignInScreen} />
-              <RootStack.Screen
-                name="SignUp"
-                component={SignUpScreen}
-                options={{ animation: 'slide_from_right' }}
-              />
-            </RootStack.Group>
-          )}
-        </RootStack.Navigator>
-      )}
+      <RootStack.Navigator screenOptions={nativeStackScreenOptions}>
+        {state.status === 'restoring' ? (
+          <RootStack.Screen
+            name="Splash"
+            component={SplashScreen}
+            options={{ headerShown: false, animation: 'none' }}
+          />
+        ) : state.status === 'signedIn' ? (
+          <RootStack.Group>
+            <RootStack.Screen
+              name="Main"
+              component={MainNavigator}
+              options={{
+                headerShown: false,
+                animation: 'none',
+              }}
+            />
+            <RootStack.Screen
+              name="EventForm"
+              component={EventFormScreen}
+              options={({ route }) => ({
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+                title: route.params.kind === 'create' ? 'New event' : 'Edit event',
+              })}
+            />
+          </RootStack.Group>
+        ) : (
+          <RootStack.Group screenOptions={{ headerShown: false }}>
+            <RootStack.Screen name="SignIn" component={SignInScreen} />
+            <RootStack.Screen
+              name="SignUp"
+              component={SignUpScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+          </RootStack.Group>
+        )}
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 };
