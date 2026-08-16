@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import type { CalendarDate } from '../../domain/date/calendarDate';
 import { timeOfDayFromParts } from '../../domain/date/timeOfDay';
@@ -56,17 +56,13 @@ export const useEventForm = (date: CalendarDate, event: CalendarEvent | null): E
   const [fields, setFields] = useState<EventFormFields>(() => initialFields(event));
   const [showErrors, setShowErrors] = useState(false);
 
-  const errors = useMemo<EventFieldErrors>(
-    () =>
-      validateEventDraft({
-        title: fields.title,
-        notes: fields.notes,
-        date,
-        startMinutes: fields.start,
-        endMinutes: fields.end,
-      }),
-    [fields.title, fields.notes, fields.start, fields.end, date],
-  );
+  const errors = validateEventDraft({
+    title: fields.title,
+    notes: fields.notes,
+    date,
+    startMinutes: fields.start,
+    endMinutes: fields.end,
+  });
 
   const setField = <K extends keyof EventFormFields>(key: K, value: EventFormFields[K]) => {
     setFields(current => ({ ...current, [key]: value }));

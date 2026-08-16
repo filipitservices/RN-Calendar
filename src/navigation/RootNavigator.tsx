@@ -8,7 +8,7 @@ import { useAuth } from '../features/auth/AuthProvider';
 import { useTheme } from '../ui/theme';
 import { MainNavigator } from './MainNavigator';
 import { SplashScreen } from './SplashScreen';
-import { navigationThemeFor, stackScreenOptionsFor } from './navigationTheme';
+import { appearanceHeaderRight, navigationThemeFor, stackScreenOptionsFor } from './navigationTheme';
 import type { RootStackParamList } from './types';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -25,7 +25,7 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="Splash"
             component={SplashScreen}
-            options={{ headerShown: false, animation: 'none', headerRight: undefined }}
+            options={{ headerShown: false, animation: 'none' }}
           />
         ) : state.status === 'signedIn' ? (
           <RootStack.Group>
@@ -35,7 +35,6 @@ export const RootNavigator = () => {
               options={{
                 headerShown: false,
                 animation: 'none',
-                headerRight: undefined,
               }}
             />
             <RootStack.Screen
@@ -45,11 +44,12 @@ export const RootNavigator = () => {
                 presentation: 'modal',
                 animation: 'slide_from_bottom',
                 title: route.params.kind === 'create' ? 'New event' : 'Edit event',
+                headerRight: appearanceHeaderRight,
               })}
             />
           </RootStack.Group>
         ) : (
-          <RootStack.Group screenOptions={{ headerShown: false, headerRight: undefined }}>
+          <RootStack.Group screenOptions={{ headerShown: false }}>
             <RootStack.Screen name="SignIn" component={SignInScreen} />
             <RootStack.Screen
               name="SignUp"

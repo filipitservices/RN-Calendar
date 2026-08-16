@@ -1,11 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 
 import type { CalendarDate } from '../../../domain/date/calendarDate';
-import { formatMonthYear } from '../../../domain/date/format';
+import { formatMonthYear, formatWeekdayShort } from '../../../domain/date/format';
+import { weekdayOrder } from '../../../domain/date/monthGrid';
 import type { MonthGrid as MonthGridModel } from '../../../domain/date/monthGrid';
+import { Text } from '../../../ui/components';
 import { spacing } from '../../../ui/theme';
 import { DayCell } from './DayCell';
-import { WeekdayHeader } from './WeekdayHeader';
 
 export type MonthGridProps = {
   grid: MonthGridModel;
@@ -28,7 +29,18 @@ export const MonthGrid = ({
   onSelectDate,
 }: MonthGridProps) => (
   <View accessibilityLabel={`Calendar for ${formatMonthYear(grid.yearMonth)}`}>
-    <WeekdayHeader weekStart={grid.weekStart} />
+    <View
+      style={styles.weekdayRow}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants">
+      {weekdayOrder(grid.weekStart).map(weekday => (
+        <View key={weekday} style={styles.weekdayCell}>
+          <Text variant="overline" color="tertiary">
+            {formatWeekdayShort(weekday).slice(0, 3).toUpperCase()}
+          </Text>
+        </View>
+      ))}
+    </View>
     {grid.weeks.map(week => (
       // The first date of a row is a stable, unique key across months.
       <View key={week[0]?.date} style={styles.week}>
@@ -49,6 +61,14 @@ export const MonthGrid = ({
 );
 
 const styles = StyleSheet.create({
+  weekdayRow: {
+    flexDirection: 'row',
+    paddingBottom: spacing.sm,
+  },
+  weekdayCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
   week: {
     flexDirection: 'row',
     marginBottom: spacing.xxs,

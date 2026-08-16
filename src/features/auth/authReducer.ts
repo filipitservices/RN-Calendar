@@ -4,19 +4,17 @@ import type { SecureCredentialFailure } from '../../services/storage/secureCrede
 
 /**
  * Session state as a discriminated union. Calendar is only represented by
- * signedIn. `unlocking` is unused by the live gate (the prompt runs on Sign-in
- * while `locked`). locked keeps the Firebase user without exposing the app.
+ * signedIn. The biometric prompt runs on Sign-in while `locked`, which keeps
+ * the Firebase user without exposing the app.
  */
 export type AuthState =
   | { status: 'restoring' }
-  | { status: 'unlocking'; user: User }
   | { status: 'locked'; user: User; pending: boolean; failure: AuthFailure | null; gateFailure: SecureCredentialFailure | null }
   | { status: 'signedOut'; pending: boolean; failure: AuthFailure | null }
   | { status: 'signedIn'; user: User };
 
 export type AuthAction =
   | { type: 'restored'; user: User | null }
-  | { type: 'unlockStarted'; user: User }
   | { type: 'unlocked'; user: User }
   | { type: 'locked'; user: User; gateFailure: SecureCredentialFailure | null }
   | { type: 'submitStarted' }
@@ -43,9 +41,6 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
   switch (action.type) {
     case 'restored':
       return action.user === null ? signedOut() : { status: 'signedIn', user: action.user };
-
-    case 'unlockStarted':
-      return { status: 'unlocking', user: action.user };
 
     case 'unlocked':
       return { status: 'signedIn', user: action.user };
@@ -84,9 +79,6 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
       if (state.status === 'locked') {
         return locked(state.user, state.pending, null, null);
       }
-      return state;
-
-    default:
       return state;
   }
 };

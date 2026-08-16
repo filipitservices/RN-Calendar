@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import type { StyleProp, ViewStyle } from 'react-native';
 
 import { formatTimeInput } from '../../../domain/date/format';
 import { addMinutes } from '../../../domain/date/timeOfDay';
@@ -16,7 +15,6 @@ export type TimeOfDayFieldProps = {
   onChange: (value: TimeOfDay) => void;
   error?: string;
   disabled?: boolean;
-  containerStyle?: StyleProp<ViewStyle>;
 };
 
 export const TimeOfDayField = ({
@@ -25,7 +23,6 @@ export const TimeOfDayField = ({
   onChange,
   error,
   disabled = false,
-  containerStyle,
 }: TimeOfDayFieldProps) => {
   const { colors } = useTheme();
   const [selected, setSelected] = useState<StepperGroup | null>(null);
@@ -41,7 +38,7 @@ export const TimeOfDayField = ({
   };
 
   return (
-    <View style={containerStyle}>
+    <View>
       <Text variant="caption" color="secondary" style={styles.label}>
         {label}
       </Text>
@@ -112,20 +109,20 @@ const StepperCluster = ({
 }: StepperClusterProps) => {
   const { colors } = useTheme();
   return (
-  <View
-    style={[
-      styles.cluster,
-      {
-        borderColor: selected ? colors.accent : colors.border,
-        backgroundColor: colors.surface,
-      },
-    ]}>
-    <Text variant="overline" color="tertiary" style={styles.clusterLabel}>
-      {groupLabel}
-    </Text>
-    <StepButton label={increaseLabel} glyph="+" onPress={onIncrease} disabled={disabled} />
-    <StepButton label={decreaseLabel} glyph="−" onPress={onDecrease} disabled={disabled} />
-  </View>
+    <View
+      style={[
+        styles.cluster,
+        {
+          borderColor: selected ? colors.accent : colors.border,
+          backgroundColor: colors.surface,
+        },
+      ]}>
+      <Text variant="overline" color="tertiary" style={styles.clusterLabel}>
+        {groupLabel}
+      </Text>
+      <StepButton label={increaseLabel} glyph="+" onPress={onIncrease} disabled={disabled} />
+      <StepButton label={decreaseLabel} glyph="−" onPress={onDecrease} disabled={disabled} />
+    </View>
   );
 };
 
@@ -139,24 +136,24 @@ type StepButtonProps = {
 const StepButton = ({ label, glyph, onPress, disabled }: StepButtonProps) => {
   const { colors } = useTheme();
   return (
-  <Pressable
-    onPress={onPress}
-    disabled={disabled}
-    accessibilityRole="button"
-    accessibilityLabel={label}
-    style={({ pressed }) => [
-      styles.step,
-      {
-        backgroundColor: pressed ? colors.accent : colors.accentSubtle,
-        opacity: disabled ? 0.5 : 1,
-      },
-    ]}>
-    {({ pressed }) => (
-      <Text variant="title" color={disabled ? 'tertiary' : pressed ? 'inverse' : 'accent'}>
-        {glyph}
-      </Text>
-    )}
-  </Pressable>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.step,
+        {
+          backgroundColor: pressed ? colors.accent : colors.accentSubtle,
+          opacity: disabled ? 0.5 : 1,
+        },
+      ]}>
+      {({ pressed }) => (
+        <Text variant="title" color={disabled ? 'tertiary' : pressed ? 'inverse' : 'accent'}>
+          {glyph}
+        </Text>
+      )}
+    </Pressable>
   );
 };
 

@@ -23,6 +23,8 @@ export const navigationThemeFor = (colors: ColorPalette, scheme: 'light' | 'dark
   };
 };
 
+export const appearanceHeaderRight = () => createElement(AppearanceToggle);
+
 export const stackScreenOptionsFor = (
   colors: ColorPalette,
   scheme: 'light' | 'dark',
@@ -37,7 +39,6 @@ export const stackScreenOptionsFor = (
   headerShadowVisible: false,
   headerTitleAlign: 'center',
   headerBackButtonDisplayMode: 'minimal',
-  headerRight: () => createElement(AppearanceToggle),
   statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
   animation: 'slide_from_right',
 });

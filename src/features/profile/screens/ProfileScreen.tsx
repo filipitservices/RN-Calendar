@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { initialsOf } from '../../../domain/auth/user';
@@ -22,13 +22,10 @@ export const ProfileScreen = () => {
   const { events } = useEvents();
   const [setupFailure, setSetupFailure] = useState<SecureCredentialFailure | null>(null);
 
-  const memberSince = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
-        new Date(user.createdAt),
-      ),
-    [user.createdAt],
-  );
+  const memberSince = new Intl.DateTimeFormat(undefined, {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(user.createdAt));
 
   const statusLabel = (() => {
     if (biometricCapability.status === 'unavailable') {

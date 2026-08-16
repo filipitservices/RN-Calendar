@@ -1,5 +1,5 @@
-import { asEventId, compareEvents } from '../../domain/events/event';
-import type { CalendarEvent, EventDraft, EventId } from '../../domain/events/event';
+import { asEventId, compareEvents, fieldsFromDraft } from '../../domain/events/event';
+import type { CalendarEvent, EventId } from '../../domain/events/event';
 import { hasErrors, validateEventDraft } from '../../domain/events/validation';
 import { err, ok } from '../../lib/result';
 import type { EventResult, EventService } from '../../services/events/eventService';
@@ -11,14 +11,6 @@ const testEventId = (): string => {
   nextEventId += 1;
   return id;
 };
-
-const fromDraft = (draft: EventDraft) => ({
-  title: draft.title.trim(),
-  notes: draft.notes.trim().length > 0 ? draft.notes.trim() : null,
-  date: draft.date,
-  startMinutes: draft.startMinutes,
-  endMinutes: draft.endMinutes,
-});
 
 /**
  * In-memory EventService for tests. Not a model of Firestore — just enough
@@ -43,7 +35,7 @@ export const createTestEventService = (): EventService => {
       const now = new Date().toISOString();
       const event: CalendarEvent = {
         id: asEventId(testEventId()),
-        ...fromDraft(draft),
+        ...fieldsFromDraft(draft),
         createdAt: now,
         updatedAt: now,
       };
@@ -62,7 +54,7 @@ export const createTestEventService = (): EventService => {
       }
       const updated: CalendarEvent = {
         ...existing,
-        ...fromDraft(draft),
+        ...fieldsFromDraft(draft),
         updatedAt: new Date().toISOString(),
       };
       save(

@@ -7,7 +7,7 @@ import {
   todayCalendarDate,
 } from '../../domain/date/calendarDate';
 import type { CalendarDate, YearMonth } from '../../domain/date/calendarDate';
-import { buildMonthGrid, clampDayToMonth } from '../../domain/date/monthGrid';
+import { buildMonthGrid } from '../../domain/date/monthGrid';
 import type { WeekStart } from '../../domain/date/monthGrid';
 
 /**
@@ -46,9 +46,6 @@ const reducer = (state: CalendarState, action: CalendarAction): CalendarState =>
 
     case 'goToToday':
       return { selected: action.today, visibleMonth: toYearMonth(action.today) };
-
-    default:
-      return state;
   }
 };
 
@@ -90,11 +87,6 @@ export const useCalendar = ({
     [],
   );
 
-  /**
-   * Paging months keeps the selection's day-of-month where possible, so
-   * stepping from 31 January lands on 28/29 February rather than overflowing
-   * into March.
-   */
   const shiftMonth = useCallback(
     (amount: number) => dispatch({ type: 'shiftMonth', amount }),
     [],
@@ -113,6 +105,3 @@ export const useCalendar = ({
     goToToday: useCallback(() => dispatch({ type: 'goToToday', today }), [today]),
   };
 };
-
-/** Exported for tests and for jumping the selection when the visible month changes. */
-export { clampDayToMonth };

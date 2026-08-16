@@ -11,7 +11,7 @@ import { CalendarScreen } from '../features/calendar/screens/CalendarScreen';
 import { ProfileScreen } from '../features/profile/screens/ProfileScreen';
 import { Text } from '../ui/components';
 import { MIN_TOUCH_TARGET, spacing, typography, useTheme } from '../ui/theme';
-import { stackScreenOptionsFor } from './navigationTheme';
+import { appearanceHeaderRight, stackScreenOptionsFor } from './navigationTheme';
 import { TabBarIcon } from './TabBarIcon';
 import type { MainStackParamList } from './types';
 
@@ -32,7 +32,10 @@ export const MainNavigator = () => {
     <View style={styles.shell}>
       <View style={styles.scenes}>
         <MainStack.Navigator
-          screenOptions={stackScreenOptionsFor(colors, scheme)}
+          screenOptions={{
+            ...stackScreenOptionsFor(colors, scheme),
+            headerRight: appearanceHeaderRight,
+          }}
           screenListeners={({ navigation }) => {
             nestedNavRef.current = navigation;
             return {};

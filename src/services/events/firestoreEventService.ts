@@ -9,8 +9,8 @@ import {
   updateDoc,
 } from '@react-native-firebase/firestore';
 
-import { asEventId, compareEvents, decodeCalendarEvent } from '../../domain/events/event';
-import type { CalendarEvent, EventDraft, EventId } from '../../domain/events/event';
+import { asEventId, compareEvents, decodeCalendarEvent, fieldsFromDraft } from '../../domain/events/event';
+import type { CalendarEvent, EventId } from '../../domain/events/event';
 import { hasErrors, validateEventDraft } from '../../domain/events/validation';
 import { err, ok } from '../../lib/result';
 import type { EventResult, EventService } from './eventService';
@@ -19,14 +19,6 @@ const eventsCollection = (userId: string) =>
   collection(getFirestore(), 'users', userId, 'events');
 
 const eventDoc = (userId: string, id: string) => doc(getFirestore(), 'users', userId, 'events', id);
-
-const fromDraft = (draft: EventDraft) => ({
-  title: draft.title.trim(),
-  notes: draft.notes.trim().length > 0 ? draft.notes.trim() : null,
-  date: draft.date,
-  startMinutes: draft.startMinutes,
-  endMinutes: draft.endMinutes,
-});
 
 const decodeSnapshot = (id: string, data: unknown): CalendarEvent | null => {
   if (typeof data !== 'object' || data === null) {
@@ -58,7 +50,7 @@ export const createFirestoreEventService = (): EventService => ({
     }
     try {
       const now = new Date().toISOString();
-      const fields = { ...fromDraft(draft), createdAt: now, updatedAt: now };
+      const fields = { ...fieldsFromDraft(draft), createdAt: now, updatedAt: now };
       const reference = await addDoc(eventsCollection(userId), fields);
       return ok({
         id: asEventId(reference.id),
@@ -85,7 +77,7 @@ export const createFirestoreEventService = (): EventService => ({
       }
       const updated: CalendarEvent = {
         ...previous,
-        ...fromDraft(draft),
+        ...fieldsFromDraft(draft),
         updatedAt: new Date().toISOString(),
       };
       await updateDoc(reference, {

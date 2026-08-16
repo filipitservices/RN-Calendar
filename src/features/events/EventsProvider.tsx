@@ -3,11 +3,9 @@ import type { ReactNode } from 'react';
 
 import type { CalendarEvent, EventDraft, EventId } from '../../domain/events/event';
 import type { EventFailure, EventService } from '../../services/events/eventService';
-import { useAuth } from '../auth/AuthProvider';
 
 export type EventsContextValue = {
   events: readonly CalendarEvent[];
-  isLoading: boolean;
   createEvent: (draft: EventDraft) => Promise<EventFailure | null>;
   updateEvent: (id: EventId, draft: EventDraft) => Promise<EventFailure | null>;
   deleteEvent: (id: EventId) => Promise<EventFailure | null>;
@@ -17,6 +15,7 @@ const EventsContext = createContext<EventsContextValue | null>(null);
 
 export type EventsProviderProps = {
   service: EventService;
+  userId: string | null;
   children: ReactNode;
 };
 
@@ -27,12 +26,8 @@ export type EventsProviderProps = {
  *
  * Events are scoped to the signed-in user, so the list resets on sign-out.
  */
-export const EventsProvider = ({ service, children }: EventsProviderProps) => {
-  const { state: authState } = useAuth();
-  const userId = authState.status === 'signedIn' ? authState.user.id : null;
-
+export const EventsProvider = ({ service, userId, children }: EventsProviderProps) => {
   const [events, setEvents] = useState<readonly CalendarEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (userId === null) {
@@ -40,12 +35,10 @@ export const EventsProvider = ({ service, children }: EventsProviderProps) => {
       return;
     }
     let active = true;
-    setIsLoading(true);
     const load = async () => {
       const loaded = await service.listForUser(userId).catch(() => []);
       if (active) {
         setEvents(loaded);
-        setIsLoading(false);
       }
     };
     void load();
@@ -101,8 +94,8 @@ export const EventsProvider = ({ service, children }: EventsProviderProps) => {
   );
 
   const value = useMemo<EventsContextValue>(
-    () => ({ events, isLoading, createEvent, updateEvent, deleteEvent }),
-    [events, isLoading, createEvent, updateEvent, deleteEvent],
+    () => ({ events, createEvent, updateEvent, deleteEvent }),
+    [events, createEvent, updateEvent, deleteEvent],
   );
 
   return <EventsContext.Provider value={value}>{children}</EventsContext.Provider>;

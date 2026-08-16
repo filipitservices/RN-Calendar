@@ -37,6 +37,18 @@ export type EventDraft = {
   readonly endMinutes: TimeOfDay;
 };
 
+/** Persistence fields derived from a draft: trimmed title, empty notes stored as null. */
+export const fieldsFromDraft = (draft: EventDraft) => {
+  const notes = draft.notes.trim();
+  return {
+    title: draft.title.trim(),
+    notes: notes.length > 0 ? notes : null,
+    date: draft.date,
+    startMinutes: draft.startMinutes,
+    endMinutes: draft.endMinutes,
+  };
+};
+
 /** Chronological within a day. Same start time falls back to title for a stable order. */
 export const compareEvents = (a: CalendarEvent, b: CalendarEvent): number => {
   const byDate = compareCalendarDates(a.date, b.date);

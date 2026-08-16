@@ -9,14 +9,12 @@ export type IconButtonProps = {
   direction: ChevronDirection;
   onPress: () => void;
   accessibilityLabel: string;
-  size?: 'sm' | 'md';
 };
 
 export const IconButton = ({
   direction,
   onPress,
   accessibilityLabel,
-  size = 'md',
 }: IconButtonProps) => {
   const { colors } = useTheme();
   const Icon = direction === 'left' ? ChevronLeft : ChevronRight;
@@ -30,7 +28,7 @@ export const IconButton = ({
         styles.button,
         pressed && { backgroundColor: colors.accentSubtle },
       ]}>
-      <Icon size={size === 'sm' ? 18 : 22} color={colors.textSecondary} />
+      <Icon size={22} color={colors.textSecondary} />
     </Pressable>
   );
 };

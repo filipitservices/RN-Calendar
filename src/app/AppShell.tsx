@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AuthProvider } from '../features/auth/AuthProvider';
+import { AuthProvider, useAuth } from '../features/auth/AuthProvider';
 import { EventsProvider } from '../features/events/EventsProvider';
 import { RootNavigator } from '../navigation/RootNavigator';
 import type { AuthService } from '../services/auth/authService';
@@ -21,13 +22,29 @@ export const AppShell = ({ authService, eventService, biometricUnlock }: AppShel
     <AppearanceProvider>
       <ThemedStatusBar />
       <AuthProvider service={authService} biometricUnlock={biometricUnlock}>
-        <EventsProvider service={eventService}>
+        <EventsForSession service={eventService}>
           <RootNavigator />
-        </EventsProvider>
+        </EventsForSession>
       </AuthProvider>
     </AppearanceProvider>
   </SafeAreaProvider>
 );
+
+const EventsForSession = ({
+  service,
+  children,
+}: {
+  service: EventService;
+  children: ReactNode;
+}) => {
+  const { state } = useAuth();
+  const userId = state.status === 'signedIn' ? state.user.id : null;
+  return (
+    <EventsProvider service={service} userId={userId}>
+      {children}
+    </EventsProvider>
+  );
+};
 
 const ThemedStatusBar = () => {
   const { scheme } = useTheme();

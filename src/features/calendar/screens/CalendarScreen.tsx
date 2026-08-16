@@ -54,7 +54,7 @@ export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
       <Card
         tone="flat"
         padded={false}
-        style={[styles.agenda, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        style={[styles.agenda, { borderBottomColor: colors.border }]}>
         <View style={[styles.agendaHeader, { borderBottomColor: colors.border }]}>
           <DayAgendaHeader
             date={calendar.selected}

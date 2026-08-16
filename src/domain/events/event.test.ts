@@ -7,6 +7,7 @@ import {
   countEventsByDate,
   decodeCalendarEvent,
   eventsForDate,
+  fieldsFromDraft,
 } from './event';
 import type { CalendarEvent } from './event';
 
@@ -183,6 +184,26 @@ describe('conflictingEventIds', () => {
       endMinutes: timeOfDayFromParts(12, 0),
     };
     expect(conflictingEventIds([first, moved]).size).toBe(0);
+  });
+});
+
+describe('fieldsFromDraft', () => {
+  it('trims the title and stores blank notes as null', () => {
+    expect(
+      fieldsFromDraft({
+        title: '  Stand-up  ',
+        notes: '   ',
+        date: date('2026-08-15'),
+        startMinutes: timeOfDayFromParts(9, 0),
+        endMinutes: timeOfDayFromParts(10, 0),
+      }),
+    ).toEqual({
+      title: 'Stand-up',
+      notes: null,
+      date: date('2026-08-15'),
+      startMinutes: timeOfDayFromParts(9, 0),
+      endMinutes: timeOfDayFromParts(10, 0),
+    });
   });
 });
 

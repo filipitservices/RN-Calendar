@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { AppState } from 'react-native';
 
 import type { Credentials, Registration, User } from '../../domain/auth/user';
-import type { AuthFailure, AuthService } from '../../services/auth/authService';
+import type { AuthFailure, AuthResult, AuthService } from '../../services/auth/authService';
 import type { BiometricCapability, BiometricUnlockService } from '../../services/biometrics/biometricUnlockService';
 import type { SecureCredentialFailure } from '../../services/storage/secureCredentialStore';
 import { authReducer, initialAuthState } from './authReducer';
@@ -61,7 +61,7 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
   stateRef.current = state;
   const skipGateRef = useRef(false);
   const generationRef = useRef(0);
-  const enableInFlightRef = useRef(false);
+  const biometricInFlightRef = useRef(false);
 
   useEffect(() => {
     void biometricUnlock.lastEmail().then(email => {
@@ -86,8 +86,8 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
   const runGate = useCallback(
     async (user: User) => {
       const generation = generationRef.current;
-      // Stay on Sign-in while the system prompt is up. Going to `unlocking`
-      // unmounts that screen under BiometricPrompt and Fabric loses view tags.
+      // Stay on Sign-in while the system prompt is up. Leaving that screen
+      // under BiometricPrompt loses Fabric view tags.
       const result = await biometricUnlock.authenticate();
       if (generation !== generationRef.current) {
         return;
@@ -121,7 +121,7 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
 
       const current = stateRef.current;
       if (
-        (current.status === 'signedIn' || current.status === 'locked' || current.status === 'unlocking') &&
+        (current.status === 'signedIn' || current.status === 'locked') &&
         current.user.id === user.id
       ) {
         return;
@@ -152,36 +152,35 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
     });
   }, [applyAuthenticated, biometricUnlock, service]);
 
+  const finishCredentials = useCallback(
+    async (result: AuthResult) => {
+      if (result.ok) {
+        await applyAuthenticated(result.value);
+        dispatch({ type: 'authenticated', user: result.value });
+        return;
+      }
+      skipGateRef.current = false;
+      dispatch({ type: 'submitFailed', failure: result.error });
+    },
+    [applyAuthenticated],
+  );
+
   const register = useCallback(
     async (registration: Registration) => {
       dispatch({ type: 'submitStarted' });
       skipGateRef.current = true;
-      const result = await service.register(registration);
-      if (result.ok) {
-        await applyAuthenticated(result.value);
-        dispatch({ type: 'authenticated', user: result.value });
-      } else {
-        skipGateRef.current = false;
-        dispatch({ type: 'submitFailed', failure: result.error });
-      }
+      await finishCredentials(await service.register(registration));
     },
-    [applyAuthenticated, service],
+    [finishCredentials, service],
   );
 
   const signIn = useCallback(
     async (credentials: Credentials) => {
       dispatch({ type: 'submitStarted' });
       skipGateRef.current = true;
-      const result = await service.signIn(credentials);
-      if (result.ok) {
-        await applyAuthenticated(result.value);
-        dispatch({ type: 'authenticated', user: result.value });
-      } else {
-        skipGateRef.current = false;
-        dispatch({ type: 'submitFailed', failure: result.error });
-      }
+      await finishCredentials(await service.signIn(credentials));
     },
-    [applyAuthenticated, service],
+    [finishCredentials, service],
   );
 
   const signOut = useCallback(async () => {
@@ -207,10 +206,11 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
     if (current.status !== 'signedIn') {
       return { kind: 'failed' };
     }
-    if (enableInFlightRef.current) {
+    if (biometricInFlightRef.current) {
       return null;
     }
-    enableInFlightRef.current = true;
+    biometricInFlightRef.current = true;
+    setBiometricBusy(true);
     try {
       const result = await biometricUnlock.enable(current.user.id);
       await whenAppActive();
@@ -223,15 +223,24 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
       }
       return result.error;
     } finally {
-      enableInFlightRef.current = false;
+      biometricInFlightRef.current = false;
+      setBiometricBusy(false);
     }
   }, [biometricUnlock]);
 
   const disableBiometrics = useCallback(async () => {
+    if (biometricInFlightRef.current) {
+      return;
+    }
+    biometricInFlightRef.current = true;
     setBiometricBusy(true);
-    await biometricUnlock.disable();
-    setBiometricsEnabled(false);
-    setBiometricBusy(false);
+    try {
+      await biometricUnlock.disable();
+      setBiometricsEnabled(false);
+    } finally {
+      biometricInFlightRef.current = false;
+      setBiometricBusy(false);
+    }
   }, [biometricUnlock]);
 
   const value = useMemo<AuthContextValue>(

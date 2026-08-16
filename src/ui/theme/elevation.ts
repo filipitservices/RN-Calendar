@@ -15,14 +15,3 @@ export const raisedElevation = (shadowColor: string): ViewStyle =>
       shadowOpacity: 0.06,
     },
   }) ?? { elevation: 2 };
-
-export const floatingElevation = (shadowColor: string): ViewStyle =>
-  Platform.select<ViewStyle>({
-    android: { elevation: 4 },
-    default: {
-      shadowColor,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 12,
-      shadowOpacity: 0.1,
-    },
-  }) ?? { elevation: 4 };
