@@ -24,7 +24,7 @@ export const navigationTheme: Theme = {
 };
 
 /**
- * Header styling shared by the native stack and the tab navigator. Native
+ * Header styling shared by native-stack screens that show a header. Native
  * headers own the top safe-area inset; screens must not pad `top` again.
  */
 export const sharedHeaderOptions = {

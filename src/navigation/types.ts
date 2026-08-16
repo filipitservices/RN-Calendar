@@ -1,5 +1,4 @@
 import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { CalendarDate } from '../domain/date/calendarDate';
@@ -18,7 +17,7 @@ export type EventFormParams =
   | { kind: 'create'; date: CalendarDate }
   | { kind: 'edit'; eventId: EventId };
 
-export type MainTabParamList = {
+export type MainStackParamList = {
   Calendar: undefined;
   Profile: undefined;
 };
@@ -28,7 +27,7 @@ export type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
   // Authenticated group
-  Main: NavigatorScreenParams<MainTabParamList>;
+  Main: NavigatorScreenParams<MainStackParamList>;
   EventForm: EventFormParams;
 };
 
@@ -38,10 +37,10 @@ export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeSta
 >;
 
 /**
- * Tab screens can also drive the parent stack (opening the event form), so
- * their props combine both navigators.
+ * Main-stack screens can also drive the parent stack (opening the event form),
+ * so their props combine both navigators.
  */
-export type MainTabScreenProps<T extends keyof MainTabParamList> = CompositeScreenProps<
-  BottomTabScreenProps<MainTabParamList, T>,
+export type MainScreenProps<T extends keyof MainStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<MainStackParamList, T>,
   RootStackScreenProps<'Main'>
 >;

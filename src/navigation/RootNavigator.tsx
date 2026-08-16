@@ -5,7 +5,7 @@ import { SignInScreen } from '../features/auth/screens/SignInScreen';
 import { SignUpScreen } from '../features/auth/screens/SignUpScreen';
 import { EventFormScreen } from '../features/events/screens/EventFormScreen';
 import { useAuth } from '../features/auth/AuthProvider';
-import { MainTabs } from './MainTabs';
+import { MainNavigator } from './MainNavigator';
 import { SplashScreen } from './SplashScreen';
 import { nativeStackScreenOptions, navigationTheme } from './navigationTheme';
 import type { RootStackParamList } from './types';
@@ -33,7 +33,7 @@ export const RootNavigator = () => {
             <RootStack.Group>
               <RootStack.Screen
                 name="Main"
-                component={MainTabs}
+                component={MainNavigator}
                 options={{
                   headerShown: false,
                   animation: 'slide_from_right',

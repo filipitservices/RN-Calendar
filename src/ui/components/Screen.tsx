@@ -10,7 +10,7 @@ export type ScreenProps = {
   children: ReactNode;
   /**
    * Safe-area edges to pad. Navigator chrome owns the rest:
-   * headers pad `top`; the tab bar pads `bottom` on tab screens.
+   * headers pad `top`; the main nav bar pads `bottom` on Calendar and Profile.
    * Default is left/right only so screens under a header do not double-inset.
    */
   edges?: readonly Edge[];

@@ -4,7 +4,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import type { CalendarDate } from '../../../domain/date/calendarDate';
 import { countEventsByDate, eventsForDate } from '../../../domain/events/event';
 import type { CalendarEvent } from '../../../domain/events/event';
-import type { MainTabScreenProps } from '../../../navigation/types';
+import type { MainScreenProps } from '../../../navigation/types';
 import { Button, Card, EmptyState, Screen } from '../../../ui/components';
 import { colors, spacing } from '../../../ui/theme';
 import { useEvents } from '../../events/EventsProvider';
@@ -14,7 +14,7 @@ import { MonthGrid } from '../components/MonthGrid';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { useCalendar } from '../useCalendar';
 
-export const CalendarScreen = ({ navigation }: MainTabScreenProps<'Calendar'>) => {
+export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
   const { events } = useEvents();
   const calendar = useCalendar();
 
@@ -32,7 +32,7 @@ export const CalendarScreen = ({ navigation }: MainTabScreenProps<'Calendar'>) =
     navigation.navigate('EventForm', { kind: 'edit', eventId: event.id });
 
   return (
-    // The tab bar owns the bottom inset and the tab header owns the top.
+    // The main nav bar owns the bottom inset and the stack header owns the top.
     <Screen padded={false}>
       <View style={styles.calendarSection}>
         <MonthNavigator
