@@ -132,10 +132,9 @@ const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
           placeholder="Enter event title here..."
         />
 
-        <View style={styles.timeRow}>
+        <View style={styles.timeColumn}>
           <TimeOfDayField
             label="Starts"
-            containerStyle={styles.timeField}
             value={form.fields.start}
             onChange={value => form.setField('start', value)}
             error={errorFor('startMinutes')}
@@ -143,7 +142,6 @@ const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
           />
           <TimeOfDayField
             label="Ends"
-            containerStyle={styles.timeField}
             value={form.fields.end}
             onChange={value => form.setField('end', value)}
             error={errorFor('endMinutes')}
@@ -208,12 +206,8 @@ const styles = StyleSheet.create({
   fields: {
     gap: spacing.lg,
   },
-  timeRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  timeField: {
-    flex: 1,
+  timeColumn: {
+    gap: spacing.lg,
   },
   actions: {
     marginTop: spacing.xl,

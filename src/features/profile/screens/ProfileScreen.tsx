@@ -68,7 +68,7 @@ export const ProfileScreen = () => {
       <Card style={styles.security}>
         <Text variant="bodyStrong">Sign in with biometrics</Text>
         <Text variant="caption" color="secondary" style={styles.securityCopy}>
-          Unlock the app on this device with fingerprint or face instead of typing your
+          Unlock the app on this device with fingerprint or face ID instead of typing your
           password.
         </Text>
         <DetailRow label="Status" value={statusLabel} />

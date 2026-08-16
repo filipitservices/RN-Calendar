@@ -116,7 +116,7 @@ export const SignInScreen = ({ navigation }: RootStackScreenProps<'SignIn'>) => 
             void unlockWithBiometrics();
           }}
           disabled={isPending}
-          accessibilityHint="Unlocks your calendar with fingerprint or face on this device"
+          accessibilityHint="Unlocks your calendar with fingerprint or face ID on this device"
         />
       ) : null}
     </AuthLayout>

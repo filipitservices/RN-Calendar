@@ -6,7 +6,7 @@ import { formatTimeInput } from '../../../domain/date/format';
 import { addMinutes } from '../../../domain/date/timeOfDay';
 import type { TimeOfDay } from '../../../domain/date/timeOfDay';
 import { Card, Text } from '../../../ui/components';
-import { colors, MIN_TOUCH_TARGET, radii, spacing } from '../../../ui/theme';
+import { colors, radii, spacing } from '../../../ui/theme';
 
 type StepperGroup = 'hour' | 'minute';
 
@@ -46,7 +46,7 @@ export const TimeOfDayField = ({
       </Text>
       <Card tone="flat" padded={false} style={[styles.panel, hasError && styles.panelError]}>
         <Text
-          variant="title"
+          variant="display"
           accessibilityLabel={`${label}, ${display}`}
           style={styles.clock}>
           {display}
@@ -104,10 +104,8 @@ const StepperCluster = ({
     <Text variant="overline" color="tertiary" style={styles.clusterLabel}>
       {groupLabel}
     </Text>
-    <View style={styles.clusterButtons}>
-      <StepButton label={decreaseLabel} glyph="−" onPress={onDecrease} disabled={disabled} />
-      <StepButton label={increaseLabel} glyph="+" onPress={onIncrease} disabled={disabled} />
-    </View>
+    <StepButton label={increaseLabel} glyph="+" onPress={onIncrease} disabled={disabled} />
+    <StepButton label={decreaseLabel} glyph="−" onPress={onDecrease} disabled={disabled} />
   </View>
 );
 
@@ -125,9 +123,11 @@ const StepButton = ({ label, glyph, onPress, disabled }: StepButtonProps) => (
     accessibilityRole="button"
     accessibilityLabel={label}
     style={({ pressed }) => [styles.step, pressed && styles.stepPressed, disabled && styles.stepDisabled]}>
-    <Text variant="heading" color={disabled ? 'tertiary' : 'accent'}>
-      {glyph}
-    </Text>
+    {({ pressed }) => (
+      <Text variant="title" color={disabled ? 'tertiary' : pressed ? 'inverse' : 'accent'}>
+        {glyph}
+      </Text>
+    )}
   </Pressable>
 );
 
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   panel: {
     padding: spacing.md,
     backgroundColor: colors.surfaceSunken,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   panelError: {
     borderColor: colors.danger,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   groups: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   cluster: {
     flex: 1,
@@ -159,29 +159,26 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     backgroundColor: colors.surface,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    alignItems: 'center',
+    padding: spacing.xs,
+    gap: spacing.xs,
   },
   clusterSelected: {
     borderColor: colors.accent,
   },
   clusterLabel: {
+    textAlign: 'center',
     letterSpacing: 0.6,
-  },
-  clusterButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: spacing.xxs,
   },
   step: {
-    width: MIN_TOUCH_TARGET,
-    height: MIN_TOUCH_TARGET,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.md,
+    backgroundColor: colors.accentSubtle,
   },
   stepPressed: {
-    backgroundColor: colors.accentSubtle,
+    backgroundColor: colors.accent,
   },
   stepDisabled: {
     opacity: 0.5,
