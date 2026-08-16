@@ -1,8 +1,14 @@
 import { AppShell } from './AppShell';
-import { authService, eventService } from './services';
+import { authService, biometricUnlockService, eventService } from './services';
 
 /**
  * Composition root: binds the app tree to the concrete, device-backed service
  * implementations.
  */
-export const App = () => <AppShell authService={authService} eventService={eventService} />;
+export const App = () => (
+  <AppShell
+    authService={authService}
+    eventService={eventService}
+    biometricUnlock={biometricUnlockService}
+  />
+);

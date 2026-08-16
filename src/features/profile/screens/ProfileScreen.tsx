@@ -1,23 +1,45 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { initialsOf } from '../../../domain/auth/user';
 import { colors, radii, spacing } from '../../../ui/theme';
-import { Button, Card, Screen, Text } from '../../../ui/components';
-import { useAuth, useAuthenticatedUser } from '../../auth/AuthProvider';
+import { Banner, Button, Card, Screen, Text } from '../../../ui/components';
+import { biometricFailureMessage, useAuth, useAuthenticatedUser } from '../../auth/AuthProvider';
 import { useEvents } from '../../events/EventsProvider';
+import type { SecureCredentialFailure } from '../../../services/storage/secureCredentialStore';
 
 export const ProfileScreen = () => {
   const user = useAuthenticatedUser();
-  const { signOut } = useAuth();
+  const {
+    signOut,
+    biometricCapability,
+    biometricsEnabled,
+    biometricBusy,
+    enableBiometrics,
+    disableBiometrics,
+  } = useAuth();
   const { events } = useEvents();
+  const [setupFailure, setSetupFailure] = useState<SecureCredentialFailure | null>(null);
 
   const memberSince = useMemo(
-    () => new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
-      new Date(user.createdAt),
-    ),
+    () =>
+      new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
+        new Date(user.createdAt),
+      ),
     [user.createdAt],
   );
+
+  const statusLabel = (() => {
+    if (biometricCapability.status === 'unavailable') {
+      return 'Not available on this device';
+    }
+    if (biometricCapability.status === 'notEnrolled') {
+      return 'No fingerprint or face enrolled';
+    }
+    return biometricsEnabled ? 'On for this device' : 'Off';
+  })();
+
+  const canToggle = biometricCapability.status === 'ready';
 
   return (
     <Screen scrollable>
@@ -43,6 +65,42 @@ export const ProfileScreen = () => {
         <DetailRow label="Member since" value={memberSince} />
       </Card>
 
+      <Card style={styles.security}>
+        <Text variant="bodyStrong">Sign in with biometrics</Text>
+        <Text variant="caption" color="secondary" style={styles.securityCopy}>
+          Unlock this app on this device with fingerprint or face after you have signed in.
+          It is off until you turn it on.
+        </Text>
+        <DetailRow label="Status" value={statusLabel} />
+        {setupFailure !== null ? (
+          <Banner tone="danger" message={biometricFailureMessage(setupFailure)} />
+        ) : null}
+        {canToggle ? (
+          <Button
+            label={biometricsEnabled ? 'Turn off' : 'Turn on'}
+            variant={biometricsEnabled ? 'secondary' : 'primary'}
+            size="md"
+            loading={biometricBusy}
+            onPress={() => {
+              void (async () => {
+                setSetupFailure(null);
+                if (biometricsEnabled) {
+                  await disableBiometrics();
+                  return;
+                }
+                const failure = await enableBiometrics();
+                setSetupFailure(failure);
+              })();
+            }}
+            accessibilityHint={
+              biometricsEnabled
+                ? 'Turns off biometric unlock on this device'
+                : 'Asks you to confirm with biometrics, then enables unlock on this device'
+            }
+          />
+        ) : null}
+      </Card>
+
       <View style={styles.actions}>
         <Button
           label="Log out"
@@ -53,7 +111,6 @@ export const ProfileScreen = () => {
           accessibilityHint="Signs you out and returns to the sign-in screen"
         />
       </View>
-      
     </Screen>
   );
 };
@@ -64,7 +121,6 @@ type DetailRowProps = {
 };
 
 const DetailRow = ({ label, value }: DetailRowProps) => (
-  // Grouped so a screen reader announces "Events scheduled, 4" as one item.
   <View style={styles.row} accessible accessibilityLabel={`${label}, ${value}`}>
     <Text variant="body" color="secondary">
       {label}
@@ -95,6 +151,13 @@ const styles = StyleSheet.create({
   details: {
     marginTop: spacing.lg,
     paddingVertical: spacing.xs,
+  },
+  security: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  securityCopy: {
+    marginBottom: spacing.xs,
   },
   row: {
     flexDirection: 'row',

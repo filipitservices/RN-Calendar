@@ -1,18 +1,24 @@
 import type { User } from '../../domain/auth/user';
 import type { AuthFailure } from '../../services/auth/authService';
+import type { SecureCredentialFailure } from '../../services/storage/secureCredentialStore';
 
 /**
- * Session state as a discriminated union. There is no way to represent
- * "signed in but no user" or "signed out while still loading", so screens
- * cannot be written against an impossible combination.
+ * Session state as a discriminated union. Calendar is only represented by
+ * signedIn; unlocking never mounts it, and locked keeps the Firebase user
+ * without exposing the app.
  */
 export type AuthState =
   | { status: 'restoring' }
+  | { status: 'unlocking'; user: User }
+  | { status: 'locked'; user: User; pending: boolean; failure: AuthFailure | null; gateFailure: SecureCredentialFailure | null }
   | { status: 'signedOut'; pending: boolean; failure: AuthFailure | null }
   | { status: 'signedIn'; user: User };
 
 export type AuthAction =
   | { type: 'restored'; user: User | null }
+  | { type: 'unlockStarted'; user: User }
+  | { type: 'unlocked'; user: User }
+  | { type: 'locked'; user: User; gateFailure: SecureCredentialFailure | null }
   | { type: 'submitStarted' }
   | { type: 'submitFailed'; failure: AuthFailure }
   | { type: 'authenticated'; user: User }
@@ -26,18 +32,44 @@ const signedOut = (
   failure: AuthFailure | null = null,
 ): AuthState => ({ status: 'signedOut', pending, failure });
 
+const locked = (
+  user: User,
+  pending = false,
+  failure: AuthFailure | null = null,
+  gateFailure: SecureCredentialFailure | null = null,
+): AuthState => ({ status: 'locked', user, pending, failure, gateFailure });
+
 export const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case 'restored':
       return action.user === null ? signedOut() : { status: 'signedIn', user: action.user };
 
+    case 'unlockStarted':
+      return { status: 'unlocking', user: action.user };
+
+    case 'unlocked':
+      return { status: 'signedIn', user: action.user };
+
+    case 'locked':
+      return locked(action.user, false, null, action.gateFailure);
+
     case 'submitStarted':
-      // Only meaningful while signed out; ignored otherwise so a stale action
-      // cannot knock an authenticated session back into a form state.
-      return state.status === 'signedOut' ? signedOut(true, null) : state;
+      if (state.status === 'signedOut') {
+        return signedOut(true, null);
+      }
+      if (state.status === 'locked') {
+        return locked(state.user, true, null, null);
+      }
+      return state;
 
     case 'submitFailed':
-      return state.status === 'signedOut' ? signedOut(false, action.failure) : state;
+      if (state.status === 'signedOut') {
+        return signedOut(false, action.failure);
+      }
+      if (state.status === 'locked') {
+        return locked(state.user, false, action.failure, null);
+      }
+      return state;
 
     case 'authenticated':
       return { status: 'signedIn', user: action.user };
@@ -46,7 +78,13 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
       return signedOut();
 
     case 'failureDismissed':
-      return state.status === 'signedOut' ? signedOut(state.pending, null) : state;
+      if (state.status === 'signedOut') {
+        return signedOut(state.pending, null);
+      }
+      if (state.status === 'locked') {
+        return locked(state.user, state.pending, null, null);
+      }
+      return state;
 
     default:
       return state;

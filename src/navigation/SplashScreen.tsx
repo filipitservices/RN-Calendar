@@ -4,8 +4,8 @@ import { colors, spacing } from '../ui/theme';
 import { Screen, Text } from '../ui/components';
 
 /**
- * Shown while the persisted session is being restored, so the app never
- * flashes the sign-in screen at an already-authenticated user.
+ * Shown while the persisted session is being restored or the biometric gate
+ * is running, so the app never flashes Calendar or sign-in at the wrong time.
  */
 export const SplashScreen = () => (
   <Screen edges={['top', 'bottom', 'left', 'right']}>

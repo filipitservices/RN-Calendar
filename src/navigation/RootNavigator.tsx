@@ -25,7 +25,7 @@ export const RootNavigator = () => {
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      {state.status === 'restoring' ? (
+      {state.status === 'restoring' || state.status === 'unlocking' ? (
         <SplashScreen />
       ) : (
         <RootStack.Navigator screenOptions={nativeStackScreenOptions}>

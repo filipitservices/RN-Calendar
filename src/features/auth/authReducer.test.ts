@@ -87,4 +87,47 @@ describe('authReducer', () => {
     expect(next).not.toBe(state);
     expect(state).toEqual(signedOut);
   });
+
+  it('holds on splash while the biometric gate runs', () => {
+    expect(authReducer(initialAuthState, { type: 'unlockStarted', user })).toEqual({
+      status: 'unlocking',
+      user,
+    });
+  });
+
+  it('enters the app only after the gate succeeds', () => {
+    const unlocking: AuthState = { status: 'unlocking', user };
+    expect(authReducer(unlocking, { type: 'unlocked', user })).toEqual({
+      status: 'signedIn',
+      user,
+    });
+  });
+
+  it('falls back to sign-in without dropping the Firebase user', () => {
+    const unlocking: AuthState = { status: 'unlocking', user };
+    expect(authReducer(unlocking, { type: 'locked', user, gateFailure: { kind: 'cancelled' } })).toEqual({
+      status: 'locked',
+      user,
+      pending: false,
+      failure: null,
+      gateFailure: { kind: 'cancelled' },
+    });
+  });
+
+  it('treats password submit as pending while locked', () => {
+    const locked: AuthState = {
+      status: 'locked',
+      user,
+      pending: false,
+      failure: null,
+      gateFailure: { kind: 'cancelled' },
+    };
+    expect(authReducer(locked, { type: 'submitStarted' })).toEqual({
+      status: 'locked',
+      user,
+      pending: true,
+      failure: null,
+      gateFailure: null,
+    });
+  });
 });

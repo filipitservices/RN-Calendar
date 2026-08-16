@@ -4,8 +4,9 @@ import { todayCalendarDate } from '../domain/date/calendarDate';
 import { formatFullDate } from '../domain/date/format';
 import type { User } from '../domain/auth/user';
 import type { AuthService } from '../services/auth/authService';
-import { createTestAuthService, createTestEventService } from '../testing/fakes';
+import { createTestAuthService, createTestBiometricUnlockService, createTestEventService } from '../testing/fakes';
 import { AppShell } from './AppShell';
+import { err } from '../lib/result';
 
 const sessionOf = (service: AuthService): Promise<User | null> =>
   new Promise(resolve => {
@@ -20,11 +21,19 @@ const sessionOf = (service: AuthService): Promise<User | null> =>
  * services, so they cover auth gating and navigation as well as the screens
  * themselves.
  */
-const renderApp = async () => {
+const renderApp = async (
+  biometricUnlock = createTestBiometricUnlockService(),
+) => {
   const authService = createTestAuthService();
   const eventService = createTestEventService();
-  await render(<AppShell authService={authService} eventService={eventService} />);
-  return { authService, eventService };
+  await render(
+    <AppShell
+      authService={authService}
+      eventService={eventService}
+      biometricUnlock={biometricUnlock}
+    />,
+  );
+  return { authService, eventService, biometricUnlock };
 };
 
 const registerNewUser = async () => {
@@ -42,6 +51,7 @@ describe('unauthenticated area', () => {
   it('opens on the sign-in screen once the session check completes', async () => {
     await renderApp();
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Sign in with biometrics' })).toBeNull();
   });
 
   it('blocks sign-in with an invalid email and explains why', async () => {
@@ -130,7 +140,13 @@ describe('authentication gating', () => {
       password: 'calendar1',
     });
 
-    await render(<AppShell authService={authService} eventService={eventService} />);
+    await render(
+      <AppShell
+        authService={authService}
+        eventService={eventService}
+        biometricUnlock={createTestBiometricUnlockService()}
+      />,
+    );
 
     expect(await screen.findByLabelText('Calendar tab')).toBeOnTheScreen();
   });
@@ -284,5 +300,84 @@ describe('calendar navigation', () => {
     await fireEvent.press(await screen.findByLabelText('Go to today'));
 
     expect(screen.getByLabelText(formatFullDate(today))).toBeSelected();
+  });
+});
+
+describe('biometric gate', () => {
+  it('does not enter the calendar when a configured unlock is cancelled', async () => {
+    const authService = createTestAuthService();
+    const eventService = createTestEventService();
+    const biometricUnlock = createTestBiometricUnlockService({
+      biometry: 'fingerprint',
+      onGet: () => err({ kind: 'cancelled' }),
+    });
+    await authService.register({
+      displayName: 'Alex Morgan',
+      email: 'alex@example.com',
+      password: 'calendar1',
+    });
+    const user = await sessionOf(authService);
+    expect(user).not.toBeNull();
+    if (user !== null) {
+      await biometricUnlock.enable(user.id);
+    }
+
+    await render(
+      <AppShell
+        authService={authService}
+        eventService={eventService}
+        biometricUnlock={biometricUnlock}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Sign in with biometrics' })).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Calendar tab')).toBeNull();
+  });
+
+  it('lets password sign-in continue while the Firebase session is still present', async () => {
+    const authService = createTestAuthService();
+    const eventService = createTestEventService();
+    const biometricUnlock = createTestBiometricUnlockService({
+      biometry: 'fingerprint',
+      onGet: () => err({ kind: 'cancelled' }),
+    });
+    await authService.register({
+      displayName: 'Alex Morgan',
+      email: 'alex@example.com',
+      password: 'calendar1',
+    });
+    const user = await sessionOf(authService);
+    if (user !== null) {
+      await biometricUnlock.enable(user.id);
+    }
+
+    await render(
+      <AppShell
+        authService={authService}
+        eventService={eventService}
+        biometricUnlock={biometricUnlock}
+      />,
+    );
+    await screen.findByRole('button', { name: 'Sign in with biometrics' });
+
+    await fireEvent.changeText(screen.getByLabelText('Email'), 'alex@example.com');
+    await fireEvent.changeText(screen.getByLabelText('Password'), 'calendar1');
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(await screen.findByLabelText('Calendar tab')).toBeOnTheScreen();
+  });
+
+  it('clears biometric configuration on log out', async () => {
+    const biometricUnlock = createTestBiometricUnlockService({ biometry: 'fingerprint' });
+    await renderApp(biometricUnlock);
+    await registerNewUser();
+
+    await fireEvent.press(screen.getByLabelText('Profile tab'));
+    await fireEvent.press(await screen.findByLabelText('Turn on'));
+    expect(await screen.findByText('On for this device')).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByLabelText('Log out'));
+    await screen.findByRole('button', { name: 'Sign in' });
+    expect(screen.queryByRole('button', { name: 'Sign in with biometrics' })).toBeNull();
   });
 });

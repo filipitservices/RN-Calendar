@@ -21,7 +21,7 @@ A calendar and meeting-management app for Android, built with plain React Native
 
 ## What it does
 
-- **Registration and sign-in** with email/password via Firebase Authentication, per-field validation, loading states, and distinct messages for invalid credentials, an already-registered email, and an unavailable service.
+- **Registration and sign-in** with email/password via Firebase Authentication, per-field validation, loading states, and distinct messages for invalid credentials, an already-registered email, and an unavailable service. Optional **biometric unlock** on this device after the user turns it on in Profile — Firebase remains the identity; biometrics only gate access to an existing session.
 - **Calendar dashboard** as the main authenticated screen: a six-row month grid, previous/next month paging, previous/next day paging, a "Today" shortcut, event-count dots per day, and the selected day's agenda.
 - **Event creation and editing** through a single form screen — the same validation and the same hook back both, because they are the same domain operation.
 - **Profile** with the signed-in user's details, their event count, and logout.
@@ -63,6 +63,7 @@ Runtime and tooling dependencies:
 | Google services Gradle plugin | 4.5.0 |
 | `react-native-mmkv` | 4.3.2 |
 | `react-native-nitro-modules` | 0.35.9 |
+| `react-native-keychain` | 10.0.0 |
 | `jest` | 29.7.0 |
 | `@testing-library/react-native` | 14.0.1 |
 | `test-renderer` | 1.2.0 |
@@ -140,7 +141,7 @@ npm start
 npm run android
 ```
 
-`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps. React Native Firebase and `react-native-mmkv` (Nitro) are autolinked; Android also applies the Google services plugin in `android/app/build.gradle`. iOS needs `pod install` after the first install or whenever the native lockfile would change, **and** a real `GoogleService-Info.plist` — none is supplied, so iOS Firebase is not configured. This Windows development machine has no CocoaPods, so `pod install` was not run here.
+`npm run android` uses the React Native Community CLI (`react-native run-android`); there are no custom wrapper scripts hiding build steps. React Native Firebase, `react-native-mmkv` (Nitro), and `react-native-keychain` are autolinked; Android also applies the Google services plugin in `android/app/build.gradle`. iOS needs `pod install` after the first install or whenever the native lockfile would change, **and** a real `GoogleService-Info.plist` — none is supplied, so iOS Firebase is not configured. Face ID usage text is in `ios/CalendarApp/Info.plist` for when iOS is built. This Windows development machine has no CocoaPods, so `pod install` was not run here.
 
 ## Testing
 
@@ -151,7 +152,7 @@ npm test             # jest
 npm run test:coverage
 ```
 
-The suite has **201 tests across 14 files**, at **90.52% statement coverage** overall and effectively full coverage of `src/domain`. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
+The suite has **222 tests across 16 files**. `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
 
 What is actually covered:
 
@@ -160,6 +161,8 @@ What is actually covered:
 - **Decoding** — malformed persisted records are rejected rather than trusted.
 - **The auth reducer's** state transitions, including that a late form action cannot drop an active session.
 - **Firebase Auth error mapping** (`mapFirebaseAuthError`) — vendor codes onto the closed `AuthFailure` union.
+- **Keychain/BiometricPrompt error mapping** (`mapSecureCredentialError`).
+- **Biometric unlock service** against in-memory prefs and a Keychain fake.
 - **In-memory auth and event fakes** (`src/testing/fakes/`) for whole-app tests — not the native Firebase SDKs.
 - **The MMKV adapter**, against the library's in-memory `createMMKV` mock: missing keys return `null`, writes round-trip, overwrite and remove behave, and a refused write (empty key) rejects.
 - **Whole-app flows** (`src/app/AppShell.test.tsx`) through the real navigator and providers: registration, invalid-credential handling, auth gating, session restore, logout, creating an event, editing it, and confirming an event stays on its own day when the selection moves.
@@ -194,8 +197,9 @@ src/
     events/       event model, validation
     auth/         user model, validation
   services/     I/O boundary - an interface plus an implementation each
-    storage/      keyValueStore, mmkv (device prefs)
+    storage/      keyValueStore, mmkv (device prefs), secureCredentialStore + keychain adapter
     auth/         authService, firebaseAuthService, mapFirebaseAuthError
+    biometrics/   biometricUnlockService
     events/       eventService, firestoreEventService
   testing/      fakes/ in-memory AuthService + EventService for Jest only
   features/
@@ -211,7 +215,7 @@ src/
 
 Dependencies flow one way: `app → navigation → features → domain | services | ui | lib`. `domain` imports nothing from React or React Native, which is why it is trivially testable. Screens never touch a concrete service, MMKV, or `@react-native-firebase/*`; they use `useAuth()` and `useEvents()`.
 
-**State ownership** is explicit. `AuthProvider` owns the session via a reducer whose state is a discriminated union (`restoring | signedOut | signedIn`), so "signed in without a user" cannot be represented. `EventsProvider` owns the event list. Everything else — a day's agenda, per-day event counts — is derived during render with `useMemo`, so there is no second copy kept in sync by effects. Updates are immutable throughout.
+**State ownership** is explicit. `AuthProvider` owns the session via a reducer whose state is a discriminated union (`restoring | unlocking | locked | signedOut | signedIn`). Calendar mounts only for `signedIn`. `unlocking` keeps the splash while the biometric prompt runs. `locked` is a Firebase session that has not passed the biometric gate — sign-in is shown, but the user is not signed out of Firebase. `EventsProvider` owns the event list.
 
 **Navigation** is typed centrally in `src/navigation/types.ts` and registered by module augmentation, so `useNavigation()` is typed everywhere without per-call annotations. The event form's params are a discriminated union (`{ kind: 'create'; date } | { kind: 'edit'; eventId }`), which makes "edit with no id" unrepresentable. Auth gating is structural: the app never calls `navigate()` in response to an auth-state change — re-declaring the screen set performs the transition.
 
@@ -248,7 +252,7 @@ Calendar apps acquire off-by-one-day bugs by storing instants and rendering civi
 
 ## Persistence and the service boundary
 
-`AuthService` and `EventService` are interfaces. Production bindings live in exactly one file, `src/app/services.ts`: Firebase Authentication, Cloud Firestore, and MMKV for device-local prefs. Tests inject in-memory fakes from `src/testing/fakes/` via `AppShell`. Screens never import Firebase or MMKV.
+`AuthService`, `EventService`, and `BiometricUnlockService` are interfaces. Production bindings live in exactly one file, `src/app/services.ts`: Firebase Authentication, Cloud Firestore, MMKV for non-secret prefs, and Keychain/Keystore for the biometric unlock secret. Tests inject in-memory fakes from `src/testing/fakes/` via `AppShell`. Screens never import Firebase, MMKV, or Keychain.
 
 There is no JavaScript `initializeApp` and no web Firebase config. The native default app is created by the Google services Gradle plugin from `android/app/google-services.json`.
 
@@ -272,6 +276,26 @@ iOS: no `GoogleService-Info.plist` was supplied. Do not invent one, and do not c
 `User.id` is the Firebase **UID** (`asUserId(uid)`). Email is not an identifier. `displayName` is written with `updateProfile` after `createUserWithEmailAndPassword`. `createdAt` comes from `user.metadata.creationTime`, normalised to ISO at the service boundary.
 
 `AuthService.subscribe` wraps `onAuthStateChanged`. `AuthProvider` subscribes once; the existing `restoring` status covers Firebase's first callback so the sign-in screen does not flash. Passwords and tokens are not stored in the app. Firebase `error.code` values are mapped in `mapFirebaseAuthError` onto `AuthFailure` (`emailAlreadyRegistered`, `invalidCredentials`, `unavailable`).
+
+Native Firebase already persists the authenticated session on device. This app does **not** copy refresh tokens, ID tokens, or passwords into MMKV or Keychain.
+
+### Biometric unlock (device-local gate)
+
+Biometrics are not a second identity provider. They only unlock the already-persisted Firebase session on this device.
+
+- **Off by default.** A fresh install never shows “Sign in with biometrics”. After email/password, Profile has a compact security card. Turning it on requires a successful device biometric prompt; cancelling leaves it off.
+- **What is stored.** Keychain/Keystore (`react-native-keychain` 10.0.0) holds a random nonce, username = Firebase UID, `ACCESS_CONTROL.BIOMETRY_CURRENT_SET`, this-device-only. Reading that item is the gate. MMKV holds only `prefs/lastLoggedInEmail` and `prefs/biometricUnlockUserId` (which account enabled the gate — not authorization).
+- **Cold start.** Firebase restores first. If there is no user, show email/password. If there is a user but this device has no matching Keychain item, open Calendar. If there is a user **and** matching config, stay on splash, prompt once, then Calendar or the password form (`locked`). Cancel, lockout, missing enrollment, or an invalid item fall back to password **without** calling Firebase `signOut`.
+- **Sign-in.** The biometric button appears only in `locked` (session still present, gate configured). It is never the only method.
+- **Log out.** Profile logout calls Firebase `signOut` and deletes the Keychain item plus the MMKV user id, so the next person must use email/password before they can enable biometrics again.
+- **Native.** Android: `USE_BIOMETRIC` and `USE_FINGERPRINT`. iOS: `NSFaceIDUsageDescription` in `Info.plist`. Prompt copy: “Unlock CalendarApp” / “Confirm it's you to open your calendar.”
+- **Enrollment changes.** iOS `BIOMETRY_CURRENT_SET` invalidates the item when enrolled biometrics change. Android Keychain does not always invalidate in that case; a failed or mismatched read still locks the app and clears config rather than opening Calendar. Re-enable from Profile after password sign-in.
+
+### Device-local prefs (MMKV)
+
+Small non-secret values — last signed-in email, which user enabled biometric unlock — go through `KeyValueStore`. Production uses a single MMKV v4 instance (`createMMKV({ id: 'calendarapp' })`) in `src/services/storage/mmkvKeyValueStore.ts`. Secrets do not belong here. MMKV is not encrypted with an app-shipped key.
+
+`react-native-mmkv` 4.3.2 is a Nitro module and requires `react-native-nitro-modules` 0.35.9. Android autolinking covers the native side. Jest cannot load Nitro's TurboModule, so `jest.setup.js` stubs `react-native-nitro-modules`; MMKV then uses its in-memory `createMockMMKV` when `JEST_WORKER_ID` is set.
 
 ### Events (Cloud Firestore)
 
@@ -300,25 +324,15 @@ Before a device can sign in or persist events:
 2. Create a **Cloud Firestore** database.
 3. Publish `firestore.rules` (`firebase deploy --only firestore:rules`, or paste them in the Console). Check them in the Console rules simulator rather than an in-repo emulator suite.
 
-### Device-local prefs (MMKV)
-
-Small values that belong on the device rather than in Firebase — last signed-in email, biometric opt-in, and similar flags — go through `KeyValueStore`. Production uses a single MMKV v4 instance (`createMMKV({ id: 'calendarapp' })`) in `src/services/storage/mmkvKeyValueStore.ts`, the only import of `react-native-mmkv`. The instance id is the namespace; keys at the interface stay unprefixed. `set` throws (for example on an empty key) become rejected promises.
-
-`react-native-mmkv` 4.3.2 is a Nitro module and requires `react-native-nitro-modules` 0.35.9. Android autolinking covers the native side. Jest cannot load Nitro's TurboModule, so `jest.setup.js` stubs `react-native-nitro-modules`; MMKV then uses its in-memory `createMockMMKV` when `JEST_WORKER_ID` is set.
-
-MMKV is not a second copy of the account or the calendar. Passwords, sessions, and events stay on Firebase.
-
-There is no device-authentication code yet, and no placeholder pretending it exists.
-
 ## Verification status
 
-Verified by running it after the header / safe-area / transition work:
+Verified after adding the biometric gate:
 
 - `npx tsc --noEmit` — clean, with `strict` on.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest` — 201 tests pass (14 files), including AppShell flows for sign-in, registration, logout, Calendar ↔ Profile, and create/edit event (navigator headers included).
-- `./gradlew assembleDebug -PreactNativeArchitectures=x86_64` — **BUILD SUCCESSFUL** after these UI changes (native-stack headers, tabs, Firebase, MMKV). Use a short `GRADLE_USER_HOME` so Windows `MAX_PATH` does not trip ninja (see below).
-- Live emulator/device run is **not** claimed (no hypervisor on this machine).
+- `npx jest` — 222 tests pass (16 files), including AppShell flows for a fresh install (no biometric control), cancelled gate staying off Calendar, password fallback without signing out of Firebase, and logout clearing configuration.
+- `npx react-native bundle --platform android --dev false` — succeeds, including `react-native-keychain`.
+- Live emulator/device biometric prompts are **not** claimed (no hypervisor on this machine). Gradle assemble after Keychain is not re-claimed here if `MAX_PATH` blocks the cache.
 
 ### Known environment constraints
 
