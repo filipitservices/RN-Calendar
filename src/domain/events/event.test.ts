@@ -3,6 +3,7 @@ import { timeOfDayFromParts } from '../date/timeOfDay';
 import {
   asEventId,
   compareEvents,
+  conflictingEventIds,
   countEventsByDate,
   decodeCalendarEvent,
   eventsForDate,
@@ -82,6 +83,106 @@ describe('countEventsByDate', () => {
     expect(counts.get(date('2026-08-15'))).toBe(2);
     expect(counts.get(date('2026-08-16'))).toBe(1);
     expect(counts.get(date('2026-08-17'))).toBeUndefined();
+  });
+});
+
+describe('conflictingEventIds', () => {
+  it('tags a partial overlap on the same day', () => {
+    const first = event({
+      id: asEventId('a'),
+      startMinutes: timeOfDayFromParts(9, 0),
+      endMinutes: timeOfDayFromParts(11, 0),
+    });
+    const second = event({
+      id: asEventId('b'),
+      startMinutes: timeOfDayFromParts(10, 0),
+      endMinutes: timeOfDayFromParts(12, 0),
+    });
+    expect([...conflictingEventIds([first, second])].sort()).toEqual(['a', 'b']);
+  });
+
+  it('tags containment as a conflict', () => {
+    const outer = event({
+      id: asEventId('outer'),
+      startMinutes: timeOfDayFromParts(9, 0),
+      endMinutes: timeOfDayFromParts(12, 0),
+    });
+    const inner = event({
+      id: asEventId('inner'),
+      startMinutes: timeOfDayFromParts(10, 0),
+      endMinutes: timeOfDayFromParts(11, 0),
+    });
+    expect(conflictingEventIds([outer, inner])).toEqual(new Set([outer.id, inner.id]));
+  });
+
+  it('does not tag intervals that only touch at an endpoint', () => {
+    const first = event({
+      id: asEventId('a'),
+      startMinutes: timeOfDayFromParts(9, 0),
+      endMinutes: timeOfDayFromParts(10, 0),
+    });
+    const second = event({
+      id: asEventId('b'),
+      startMinutes: timeOfDayFromParts(10, 0),
+      endMinutes: timeOfDayFromParts(11, 0),
+    });
+    expect(conflictingEventIds([first, second]).size).toBe(0);
+  });
+
+  it('does not tag overlapping clock times on different days', () => {
+    const monday = event({
+      id: asEventId('mon'),
+      date: date('2026-08-17'),
+      startMinutes: timeOfDayFromParts(9, 0),
+      endMinutes: timeOfDayFromParts(11, 0),
+    });
+    const tuesday = event({
+      id: asEventId('tue'),
+      date: date('2026-08-18'),
+      startMinutes: timeOfDayFromParts(10, 0),
+      endMinutes: timeOfDayFromParts(12, 0),
+    });
+    expect(conflictingEventIds([monday, tuesday]).size).toBe(0);
+  });
+
+  it('tags every event in a three-way overlap', () => {
+    const first = event({
+      id: asEventId('a'),
+      startMinutes: timeOfDayFromParts(9, 0),
+      endMinutes: timeOfDayFromParts(12, 0),
+    });
+    const second = event({
+      id: asEventId('b'),
+      startMinutes: timeOfDayFromParts(10, 0),
+      endMinutes: timeOfDayFromParts(13, 0),
+    });
+    const third = event({
+      id: asEventId('c'),
+      startMinutes: timeOfDayFromParts(11, 0),
+      endMinutes: timeOfDayFromParts(14, 0),
+    });
+    expect(conflictingEventIds([first, second, third])).toEqual(new Set([first.id, second.id, third.id]));
+  });
+
+  it('drops the tag after an interval is edited so it no longer overlaps', () => {
+    const first = event({
+      id: asEventId('a'),
+      startMinutes: timeOfDayFromParts(9, 0),
+      endMinutes: timeOfDayFromParts(11, 0),
+    });
+    const second = event({
+      id: asEventId('b'),
+      startMinutes: timeOfDayFromParts(10, 0),
+      endMinutes: timeOfDayFromParts(12, 0),
+    });
+    expect(conflictingEventIds([first, second]).size).toBe(2);
+
+    const moved = {
+      ...second,
+      startMinutes: timeOfDayFromParts(11, 0),
+      endMinutes: timeOfDayFromParts(12, 0),
+    };
+    expect(conflictingEventIds([first, moved]).size).toBe(0);
   });
 });
 

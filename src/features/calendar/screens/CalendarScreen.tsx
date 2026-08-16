@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import type { CalendarDate } from '../../../domain/date/calendarDate';
-import { countEventsByDate, eventsForDate } from '../../../domain/events/event';
+import { conflictingEventIds, countEventsByDate, eventsForDate } from '../../../domain/events/event';
 import type { CalendarEvent } from '../../../domain/events/event';
 import type { MainScreenProps } from '../../../navigation/types';
 import { Button, Card, EmptyState, Screen } from '../../../ui/components';
@@ -24,6 +24,7 @@ export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
     () => eventsForDate(events, calendar.selected),
     [events, calendar.selected],
   );
+  const conflictIds = useMemo(() => conflictingEventIds(dayEvents), [dayEvents]);
 
   const openCreateForm = (date: CalendarDate) =>
     navigation.navigate('EventForm', { kind: 'create', date });
@@ -65,7 +66,13 @@ export const CalendarScreen = ({ navigation }: MainScreenProps<'Calendar'>) => {
         <FlatList
           data={dayEvents}
           keyExtractor={event => event.id}
-          renderItem={({ item }) => <EventListItem event={item} onPress={openEditForm} />}
+          renderItem={({ item }) => (
+            <EventListItem
+              event={item}
+              conflicted={conflictIds.has(item.id)}
+              onPress={openEditForm}
+            />
+          )}
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={

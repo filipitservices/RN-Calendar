@@ -24,7 +24,7 @@ export type SecureCredentialFailure =
 
 export type SecureCredentialResult<T> = Result<T, SecureCredentialFailure>;
 
-export type SupportedBiometry = 'fingerprint' | 'face' | 'iris' | 'none';
+export type SupportedBiometry = 'fingerprint' | 'face' | 'iris' | 'none' | 'notEnrolled';
 
 /**
  * OS-backed credential storage. Implementations must use Keychain/Keystore,

@@ -7,24 +7,37 @@ import { Text } from '../../../ui/components';
 
 export type EventListItemProps = {
   event: CalendarEvent;
+  conflicted?: boolean;
   onPress: (event: CalendarEvent) => void;
 };
 
-export const EventListItem = ({ event, onPress }: EventListItemProps) => {
+export const EventListItem = ({ event, conflicted = false, onPress }: EventListItemProps) => {
   const timeRange = formatTimeRange(event.startMinutes, event.endMinutes);
+  const accessibilityLabel = conflicted
+    ? `${event.title}, ${timeRange}, conflicted`
+    : `${event.title}, ${timeRange}`;
 
   return (
     <Pressable
       onPress={() => onPress(event)}
       accessibilityRole="button"
-      accessibilityLabel={`${event.title}, ${timeRange}`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityHint="Opens this event for editing"
       style={({ pressed }) => [styles.root, pressed && styles.pressed]}>
       <View style={styles.accent} />
       <View style={styles.body}>
-        <Text variant="bodyStrong" numberOfLines={1}>
-          {event.title}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text variant="bodyStrong" numberOfLines={1} style={styles.title}>
+            {event.title}
+          </Text>
+          {conflicted ? (
+            <View style={styles.chip}>
+              <Text variant="overline" color="danger">
+                Conflicted
+              </Text>
+            </View>
+          ) : null}
+        </View>
         <View style={styles.meta}>
           <Text variant="caption" color="secondary">
             {timeRange}
@@ -67,6 +80,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  title: {
+    flex: 1,
+  },
+  chip: {
+    backgroundColor: colors.dangerSubtle,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
   meta: {
     flexDirection: 'row',

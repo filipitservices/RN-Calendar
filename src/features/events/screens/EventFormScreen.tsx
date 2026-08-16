@@ -9,6 +9,7 @@ import type { RootStackScreenProps } from '../../../navigation/types';
 import { Banner, Button, Card, Screen, Text, TextField } from '../../../ui/components';
 import { colors, spacing } from '../../../ui/theme';
 import { eventFailureMessage, useEvents } from '../EventsProvider';
+import { TimeOfDayField } from '../components/TimeOfDayField';
 import { useEventForm } from '../useEventForm';
 
 /**
@@ -132,27 +133,21 @@ const EventFormBody = ({ date, existing, onDone }: EventFormBodyProps) => {
         />
 
         <View style={styles.timeRow}>
-          <TextField
+          <TimeOfDayField
             label="Starts"
             containerStyle={styles.timeField}
             value={form.fields.start}
-            onChangeText={value => form.setField('start', value)}
+            onChange={value => form.setField('start', value)}
             error={errorFor('startMinutes')}
-            keyboardType="numbers-and-punctuation"
-            maxLength={5}
-            editable={!isSaving}
-            placeholder="09:00"
+            disabled={isSaving}
           />
-          <TextField
+          <TimeOfDayField
             label="Ends"
             containerStyle={styles.timeField}
             value={form.fields.end}
-            onChangeText={value => form.setField('end', value)}
+            onChange={value => form.setField('end', value)}
             error={errorFor('endMinutes')}
-            keyboardType="numbers-and-punctuation"
-            maxLength={5}
-            editable={!isSaving}
-            placeholder="10:00"
+            disabled={isSaving}
           />
         </View>
 

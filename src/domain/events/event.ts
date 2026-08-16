@@ -66,6 +66,32 @@ export const countEventsByDate = (
 };
 
 /**
+ * Half-open intervals on the same civil day. Adjacent times (09:00–10:00 and
+ * 10:00–11:00) do not conflict; a genuine overlap does.
+ */
+export const eventsOverlap = (a: CalendarEvent, b: CalendarEvent): boolean =>
+  a.date === b.date && a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes;
+
+/** Derived from the live list — never stored on the event. */
+export const conflictingEventIds = (events: readonly CalendarEvent[]): ReadonlySet<EventId> => {
+  const ids = new Set<EventId>();
+  for (let index = 0; index < events.length; index += 1) {
+    const current = events[index];
+    if (current === undefined) {
+      continue;
+    }
+    for (let otherIndex = index + 1; otherIndex < events.length; otherIndex += 1) {
+      const other = events[otherIndex];
+      if (other !== undefined && eventsOverlap(current, other)) {
+        ids.add(current.id);
+        ids.add(other.id);
+      }
+    }
+  }
+  return ids;
+};
+
+/**
  * Decodes one record from persisted JSON. Returns null for anything malformed
  * so a single corrupt record cannot crash the app or be silently trusted.
  */

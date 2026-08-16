@@ -87,8 +87,8 @@ export const createKeychainSecureCredentialStore = (): SecureCredentialStore => 
   async supportedBiometry() {
     try {
       return biometryOf(await getSupportedBiometryType());
-    } catch {
-      return 'none';
+    } catch (error) {
+      return mapSecureCredentialError(error).kind === 'notEnrolled' ? 'notEnrolled' : 'none';
     }
   },
 });

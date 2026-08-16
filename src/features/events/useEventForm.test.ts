@@ -28,8 +28,8 @@ describe('useEventForm in create mode', () => {
 
     expect(result.current.fields.title).toBe('');
     expect(result.current.fields.notes).toBe('');
-    expect(result.current.fields.start).toBe('09:00');
-    expect(result.current.fields.end).toBe('10:00');
+    expect(result.current.fields.start).toBe(timeOfDayFromParts(9, 0));
+    expect(result.current.fields.end).toBe(timeOfDayFromParts(10, 0));
   });
 
   it('withholds errors until the first submit attempt', async () => {
@@ -75,30 +75,13 @@ describe('useEventForm in create mode', () => {
     });
   });
 
-  it('reports unparseable time text as a field error rather than crashing', async () => {
-    const { result } = await renderHook(() => useEventForm(date, null));
-
-    await act(() => {
-      result.current.setField('title', 'Design review');
-      result.current.setField('start', '9am');
-    });
-
-    expect(result.current.errors.startMinutes).toBeDefined();
-
-    let draft;
-    await act(() => {
-      draft = result.current.submit();
-    });
-    expect(draft).toBeNull();
-  });
-
   it('rejects an end time that is not after the start', async () => {
     const { result } = await renderHook(() => useEventForm(date, null));
 
     await act(() => {
       result.current.setField('title', 'Design review');
-      result.current.setField('start', '15:00');
-      result.current.setField('end', '14:00');
+      result.current.setField('start', timeOfDayFromParts(15, 0));
+      result.current.setField('end', timeOfDayFromParts(14, 0));
     });
 
     expect(result.current.errors.endMinutes).toBeDefined();
@@ -117,8 +100,8 @@ describe('useEventForm in edit mode', () => {
 
     expect(result.current.fields.title).toBe('Team sync');
     expect(result.current.fields.notes).toBe('Weekly catch-up');
-    expect(result.current.fields.start).toBe('14:30');
-    expect(result.current.fields.end).toBe('15:45');
+    expect(result.current.fields.start).toBe(timeOfDayFromParts(14, 30));
+    expect(result.current.fields.end).toBe(timeOfDayFromParts(15, 45));
     expect(result.current.errors).toEqual({});
   });
 
@@ -134,8 +117,8 @@ describe('useEventForm in edit mode', () => {
 
     await act(() => {
       result.current.setField('title', 'Team sync (moved)');
-      result.current.setField('start', '16:00');
-      result.current.setField('end', '17:00');
+      result.current.setField('start', timeOfDayFromParts(16, 0));
+      result.current.setField('end', timeOfDayFromParts(17, 0));
     });
 
     let draft;

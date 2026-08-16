@@ -68,7 +68,13 @@ export const createBiometricUnlockService = (
   return {
     async capability() {
       const biometry = await credentials.supportedBiometry();
-      return biometry === 'none' ? { status: 'unavailable' } : { status: 'ready' };
+      if (biometry === 'none') {
+        return { status: 'unavailable' };
+      }
+      if (biometry === 'notEnrolled') {
+        return { status: 'notEnrolled' };
+      }
+      return { status: 'ready' };
     },
 
     async isConfiguredFor(userId) {
@@ -83,6 +89,9 @@ export const createBiometricUnlockService = (
       const biometry = await credentials.supportedBiometry();
       if (biometry === 'none') {
         return err({ kind: 'unavailable' });
+      }
+      if (biometry === 'notEnrolled') {
+        return err({ kind: 'notEnrolled' });
       }
       const result = await credentials.set(userId, nonce(), ENABLE_PROMPT);
       if (!result.ok) {

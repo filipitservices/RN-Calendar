@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { AppState } from 'react-native';
 
 import type { Credentials, Registration, User } from '../../domain/auth/user';
 import type { AuthFailure, AuthService } from '../../services/auth/authService';
@@ -25,6 +26,22 @@ export type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** BiometricPrompt pauses the host; applying React tree updates before resume loses Fabric view tags. */
+const whenAppActive = (): Promise<void> =>
+  new Promise(resolve => {
+    const current = AppState.currentState;
+    if (current !== 'background' && current !== 'inactive') {
+      resolve();
+      return;
+    }
+    const sub = AppState.addEventListener('change', status => {
+      if (status === 'active') {
+        sub.remove();
+        resolve();
+      }
+    });
+  });
+
 export type AuthProviderProps = {
   service: AuthService;
   biometricUnlock: BiometricUnlockService;
@@ -44,6 +61,7 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
   stateRef.current = state;
   const skipGateRef = useRef(false);
   const generationRef = useRef(0);
+  const enableInFlightRef = useRef(false);
 
   useEffect(() => {
     void biometricUnlock.lastEmail().then(email => {
@@ -189,17 +207,24 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
     if (current.status !== 'signedIn') {
       return { kind: 'failed' };
     }
-    setBiometricBusy(true);
-    const result = await biometricUnlock.enable(current.user.id);
-    setBiometricBusy(false);
-    if (result.ok) {
-      setBiometricsEnabled(true);
+    if (enableInFlightRef.current) {
       return null;
     }
-    if (result.error.kind === 'notEnrolled') {
-      setBiometricCapability({ status: 'notEnrolled' });
+    enableInFlightRef.current = true;
+    try {
+      const result = await biometricUnlock.enable(current.user.id);
+      await whenAppActive();
+      if (result.ok) {
+        setBiometricsEnabled(true);
+        return null;
+      }
+      if (result.error.kind === 'notEnrolled') {
+        setBiometricCapability({ status: 'notEnrolled' });
+      }
+      return result.error;
+    } finally {
+      enableInFlightRef.current = false;
     }
-    return result.error;
   }, [biometricUnlock]);
 
   const disableBiometrics = useCallback(async () => {

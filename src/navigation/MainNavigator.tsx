@@ -17,10 +17,7 @@ import type { MainStackParamList } from './types';
 
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
-type MainStackNav = Pick<
-  NativeStackNavigationProp<MainStackParamList>,
-  'navigate' | 'replace'
->;
+type MainStackNav = Pick<NativeStackNavigationProp<MainStackParamList>, 'navigate'>;
 
 /**
  * Authenticated primary destinations as stack pages. The nested native stack
@@ -46,7 +43,6 @@ export const MainNavigator = () => {
               title: 'Calendar',
               headerBackVisible: false,
               animation: 'slide_from_left',
-              animationTypeForReplace: 'push',
             }}
           />
           <MainStack.Screen
@@ -56,7 +52,6 @@ export const MainNavigator = () => {
               title: 'Profile',
               headerBackVisible: false,
               animation: 'slide_from_right',
-              animationTypeForReplace: 'push',
             }}
           />
         </MainStack.Navigator>
@@ -93,7 +88,7 @@ const MainNavBar = ({
           focused={current === 'Calendar'}
           onPress={() => {
             if (current !== 'Calendar') {
-              nestedNavRef.current?.replace('Calendar');
+              nestedNavRef.current?.navigate('Calendar');
             }
           }}
         />
@@ -104,7 +99,7 @@ const MainNavBar = ({
           focused={current === 'Profile'}
           onPress={() => {
             if (current !== 'Profile') {
-              nestedNavRef.current?.replace('Profile');
+              nestedNavRef.current?.navigate('Profile');
             }
           }}
         />

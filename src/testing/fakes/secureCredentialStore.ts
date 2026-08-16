@@ -36,6 +36,9 @@ export const createMemorySecureCredentialStore = (
       if (biometry === 'none') {
         return err({ kind: 'unavailable' });
       }
+      if (biometry === 'notEnrolled') {
+        return err({ kind: 'notEnrolled' });
+      }
       item = { username, secret };
       return ok(undefined);
     },

@@ -16,6 +16,14 @@ const sessionOf = (service: AuthService): Promise<User | null> =>
     });
   });
 
+const nudgeHours = async (field: 'Starts' | 'Ends', hours: number) => {
+  const label = hours > 0 ? `${field} hour later` : `${field} hour earlier`;
+  const button = screen.getByLabelText(label);
+  for (let step = 0; step < Math.abs(hours); step += 1) {
+    await fireEvent.press(button);
+  }
+};
+
 /**
  * These exercise the real navigator, providers, and screens against in-memory
  * services, so they cover auth gating and navigation as well as the screens
@@ -174,8 +182,8 @@ describe('creating and editing events', () => {
     await fireEvent.press(await screen.findByLabelText('New event'));
 
     await fireEvent.changeText(await screen.findByLabelText('Title'), 'Design review');
-    await fireEvent.changeText(screen.getByLabelText('Starts'), '11:00');
-    await fireEvent.changeText(screen.getByLabelText('Ends'), '12:00');
+    await nudgeHours('Starts', 2);
+    await nudgeHours('Ends', 2);
     await fireEvent.press(screen.getByLabelText('Create event'));
 
     expect(await screen.findByText('Design review')).toBeOnTheScreen();
@@ -220,8 +228,8 @@ describe('creating and editing events', () => {
 
     await fireEvent.press(await screen.findByLabelText('New event'));
     await fireEvent.changeText(await screen.findByLabelText('Title'), 'Backwards');
-    await fireEvent.changeText(screen.getByLabelText('Starts'), '15:00');
-    await fireEvent.changeText(screen.getByLabelText('Ends'), '14:00');
+    await nudgeHours('Starts', 6);
+    await nudgeHours('Ends', 4);
     await fireEvent.press(screen.getByLabelText('Create event'));
 
     expect(await screen.findByText('The end time must be after the start time.')).toBeOnTheScreen();
@@ -236,8 +244,8 @@ describe('creating and editing events', () => {
 
     await fireEvent.press(await screen.findByLabelText('New event'));
     await fireEvent.changeText(await screen.findByLabelText('Title'), 'Design review');
-    await fireEvent.changeText(screen.getByLabelText('Starts'), '11:00');
-    await fireEvent.changeText(screen.getByLabelText('Ends'), '12:00');
+    await nudgeHours('Starts', 2);
+    await nudgeHours('Ends', 2);
     await fireEvent.press(screen.getByLabelText('Create event'));
 
     const item = await screen.findByLabelText(/^Design review,/);

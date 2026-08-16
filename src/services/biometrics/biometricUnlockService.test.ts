@@ -4,7 +4,7 @@ import { createMemorySecureCredentialStore } from '../../testing/fakes/secureCre
 import { err } from '../../lib/result';
 
 describe('createBiometricUnlockService', () => {
-  const setup = (biometry: 'fingerprint' | 'none' = 'fingerprint') => {
+  const setup = (biometry: 'fingerprint' | 'none' | 'notEnrolled' = 'fingerprint') => {
     const prefs = createMemoryKeyValueStore();
     const credentials = createMemorySecureCredentialStore({ biometry });
     return { prefs, service: createBiometricUnlockService(prefs, credentials) };
@@ -13,6 +13,18 @@ describe('createBiometricUnlockService', () => {
   it('does not treat hardware as configured', async () => {
     const { service } = setup();
     await expect(service.capability()).resolves.toEqual({ status: 'ready' });
+    await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
+  });
+
+  it('reports unavailable when the device has no biometry', async () => {
+    const { service } = setup('none');
+    await expect(service.capability()).resolves.toEqual({ status: 'unavailable' });
+    await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
+  });
+
+  it('reports not enrolled when hardware is present but empty', async () => {
+    const { service } = setup('notEnrolled');
+    await expect(service.capability()).resolves.toEqual({ status: 'notEnrolled' });
     await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
   });
 
@@ -55,6 +67,16 @@ describe('createBiometricUnlockService', () => {
     if (!result.ok) {
       expect(result.error.kind).toBe('unavailable');
     }
+  });
+
+  it('refuses to enable when no biometric is enrolled', async () => {
+    const { service } = setup('notEnrolled');
+    const result = await service.enable('u1');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe('notEnrolled');
+    }
+    await expect(service.isConfiguredFor('u1')).resolves.toBe(false);
   });
 
   it('stores last email as non-secret metadata', async () => {
