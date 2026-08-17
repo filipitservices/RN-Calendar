@@ -6,22 +6,90 @@ A calendar and meeting-management app for Android, built with plain React Native
 
 ## Screenshots
 
-<p>
-  <img src="docs/screenshots/calendar-page.png" alt="Calendar: month grid, agenda, overlapping events" width="280" />
-  <img src="docs/screenshots/white-mode.png" alt="Calendar in light appearance" width="280" />
-  <img src="docs/screenshots/profile-page.png" alt="Profile: identity, event count, biometric unlock" width="280" />
-</p>
-<p>
-  <img src="docs/screenshots/new-event-screen.png" alt="New event form" width="280" />
-  <img src="docs/screenshots/edit-event-screen.png" alt="Edit event form" width="280" />
-  <img src="docs/screenshots/turn-on-biometrics.png" alt="Enabling biometric unlock from Profile" width="280" />
-</p>
-<p>
-  <img src="docs/screenshots/login-page.png" alt="Sign in" width="280" />
-  <img src="docs/screenshots/create-account-page.png" alt="Create account" width="280" />
-  <img src="docs/screenshots/login-page-biometrics-login.png" alt="Sign in with biometrics available" width="280" />
-  <img src="docs/screenshots/biometrics-login-success.png" alt="System biometric prompt" width="280" />
-</p>
+### Calendar
+
+Month grid, selected-day agenda, event-count dots, and overlap badges. Appearance follows the header sun/moon control.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Dark</strong></p>
+      <img src="docs/screenshots/calendar-page.png" alt="Calendar in dark appearance: August 2026 grid and two conflicted events on the 17th" width="280" />
+    </td>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Light</strong></p>
+      <img src="docs/screenshots/white-mode.png" alt="Calendar in light appearance" width="280" />
+    </td>
+  </tr>
+</table>
+
+### Events
+
+One form for create and edit: title, notes, start and end on the civil day.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <p><strong>New event</strong></p>
+      <img src="docs/screenshots/new-event-screen.png" alt="New event form" width="280" />
+    </td>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Edit event</strong></p>
+      <img src="docs/screenshots/edit-event-screen.png" alt="Edit event form" width="280" />
+    </td>
+  </tr>
+</table>
+
+### Profile
+
+Identity, scheduled-event count, and the on-device biometric gate.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Account</strong></p>
+      <img src="docs/screenshots/profile-page.png" alt="Profile: name, email, event count, biometric status off" width="280" />
+    </td>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Enable biometrics</strong></p>
+      <img src="docs/screenshots/turn-on-biometrics.png" alt="System prompt when turning on biometric unlock from Profile" width="280" />
+    </td>
+  </tr>
+</table>
+
+### Sign in
+
+Email/password on a fresh install; Create account is the adjacent stack screen.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Sign in</strong></p>
+      <img src="docs/screenshots/login-page.png" alt="Sign in with email and password" width="280" />
+    </td>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Create account</strong></p>
+      <img src="docs/screenshots/create-account-page.png" alt="Create account: name, email, password" width="280" />
+    </td>
+  </tr>
+</table>
+
+### Biometric unlock
+
+After the gate is on, a restored session lands on Sign in with a biometric control. The system prompt unlocks the existing Firebase session.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <p><strong>Locked session</strong></p>
+      <img src="docs/screenshots/login-page-biometrics-login.png" alt="Sign in with Sign in with biometrics available" width="280" />
+    </td>
+    <td align="center" valign="top" width="50%">
+      <p><strong>System prompt</strong></p>
+      <img src="docs/screenshots/biometrics-login-success.png" alt="Fingerprint prompt: Unlock CalendarApp" width="280" />
+    </td>
+  </tr>
+</table>
 
 ## Contents
 
