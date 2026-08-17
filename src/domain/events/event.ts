@@ -10,7 +10,7 @@ export const asEventId = (value: string): EventId => value as EventId;
 export const TITLE_MAX_LENGTH = 80;
 export const NOTES_MAX_LENGTH = 500;
 
-/** Letters, marks, numbers, spaces, and ordinary punctuation — not emoji, markup, or control characters. */
+/** Letters, marks, numbers, spaces, and ordinary punctuation. Not emoji, markup, or control characters. */
 const TITLE_CHAR_PATTERN = /^[\p{L}\p{M}\p{N} .,'!?()\-&/:]+$/u;
 
 export const isAllowedEventTitle = (title: string): boolean =>
@@ -27,14 +27,9 @@ export const isAllowedEventNotes = (notes: string): boolean => {
 };
 
 /**
- * A meeting on a single civil day.
- *
- * Placement is `date` + `startMinutes`/`endMinutes` rather than a pair of
- * instants, so an event cannot render on the wrong day. `createdAt`/`updatedAt`
- * are true instants but are audit metadata only — never use them for placement.
- *
- * The shape is intentionally small. Extra fields (location, attendees,
- * recurrence, reminders) can be added without touching placement or storage.
+ * Placement is `date` plus clock minutes, not a pair of instants, so timezone
+ * changes cannot move the event. `createdAt` / `updatedAt` are audit ISO
+ * instants and must never drive placement.
  */
 export type CalendarEvent = {
   readonly id: EventId;
@@ -47,7 +42,6 @@ export type CalendarEvent = {
   readonly updatedAt: string;
 };
 
-/** The user-supplied part of an event — what a form produces, shared by create and edit. */
 export type EventDraft = {
   readonly title: string;
   readonly notes: string;
@@ -56,7 +50,6 @@ export type EventDraft = {
   readonly endMinutes: TimeOfDay;
 };
 
-/** Persistence fields derived from a draft: trimmed title, empty notes stored as null. */
 export const fieldsFromDraft = (draft: EventDraft) => {
   const notes = draft.notes.trim();
   return {
@@ -68,7 +61,6 @@ export const fieldsFromDraft = (draft: EventDraft) => {
   };
 };
 
-/** Chronological within a day. Same start time falls back to title for a stable order. */
 export const compareEvents = (a: CalendarEvent, b: CalendarEvent): number => {
   const byDate = compareCalendarDates(a.date, b.date);
   if (byDate !== 0) {
@@ -85,7 +77,6 @@ export const eventsForDate = (
   date: CalendarDate,
 ): CalendarEvent[] => events.filter(event => event.date === date).sort(compareEvents);
 
-/** Event counts keyed by date, for the density dots under calendar day cells. */
 export const countEventsByDate = (
   events: readonly CalendarEvent[],
 ): ReadonlyMap<CalendarDate, number> => {
@@ -96,14 +87,10 @@ export const countEventsByDate = (
   return counts;
 };
 
-/**
- * Half-open intervals on the same civil day. Adjacent times (09:00–10:00 and
- * 10:00–11:00) do not conflict; a genuine overlap does.
- */
+/** Half-open on the same civil day. Adjacent times (09:00-10:00 and 10:00-11:00) do not conflict. */
 export const eventsOverlap = (a: CalendarEvent, b: CalendarEvent): boolean =>
   a.date === b.date && a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes;
 
-/** Derived from the live list — never stored on the event. */
 export const conflictingEventIds = (events: readonly CalendarEvent[]): ReadonlySet<EventId> => {
   const ids = new Set<EventId>();
   for (let index = 0; index < events.length; index += 1) {

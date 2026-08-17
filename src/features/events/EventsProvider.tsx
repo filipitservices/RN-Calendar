@@ -19,13 +19,7 @@ export type EventsProviderProps = {
   children: ReactNode;
 };
 
-/**
- * The single owner of the event collection. Screens read `events` and derive
- * whatever view they need (a day's agenda, per-day counts) during render —
- * there is no second copy kept in sync by effects.
- *
- * Events are scoped to the signed-in user, so the list resets on sign-out.
- */
+/** Screens derive agenda and counts from `events` during render. The list resets on sign-out. */
 export const EventsProvider = ({ service, userId, children }: EventsProviderProps) => {
   const [events, setEvents] = useState<readonly CalendarEvent[]>([]);
 

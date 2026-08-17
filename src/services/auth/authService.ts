@@ -13,10 +13,6 @@ export type AuthFailure =
 
 export type AuthResult = Result<User, AuthFailure>;
 
-/**
- * The seam between the app and authentication. Production uses Firebase;
- * tests inject an in-memory implementation of the same interface.
- */
 export type AuthService = {
   /**
    * Subscribes to the current user. The first emission is the restored session

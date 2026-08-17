@@ -1,14 +1,11 @@
 /**
- * A civil date — a year/month/day with no instant and no timezone attached.
- *
- * Stored as `YYYY-MM-DD`. This is deliberately *not* a `Date`: a `Date` is an
- * instant, and converting between an instant and "the day the user tapped"
- * is where calendar apps acquire off-by-one-day bugs. Because the encoding is
- * fixed-width, two `CalendarDate`s compare with `===` and sort lexicographically.
+ * Civil date as `YYYY-MM-DD`, not a `Date` instant. Converting instants to
+ * "the day the user tapped" is where calendar apps pick up off-by-one bugs.
+ * Fixed-width encoding means `===` and lexicographic sort work without conversion.
  */
 export type CalendarDate = string & { readonly __brand: 'CalendarDate' };
 
-/** A year/month pair identifying a month in the grid. `month` is 1-12. */
+/** `month` is 1-12. */
 export type YearMonth = {
   readonly year: number;
   readonly month: number;
@@ -114,7 +111,7 @@ const fromLocalDate = (value: Date): CalendarDate =>
     day: value.getDate(),
   });
 
-/** 0 = Sunday … 6 = Saturday. */
+/** 0 = Sunday, 6 = Saturday. */
 export const dayOfWeek = (date: CalendarDate): number => toLocalDate(date).getDay();
 
 export const addDays = (date: CalendarDate, amount: number): CalendarDate => {

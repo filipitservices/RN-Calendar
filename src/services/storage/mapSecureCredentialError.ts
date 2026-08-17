@@ -26,9 +26,6 @@ const textOf = (error: unknown): string => {
   return parts.join(' ');
 };
 
-/**
- * Maps Keychain / BiometricPrompt errors onto the app's closed failure union.
- */
 export const mapSecureCredentialError = (error: unknown): SecureCredentialFailure => {
   const raw = textOf(error);
   const lowered = raw.toLowerCase();

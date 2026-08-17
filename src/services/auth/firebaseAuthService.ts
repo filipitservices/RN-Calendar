@@ -41,10 +41,7 @@ const failureOf = (error: unknown): AuthResult => {
   return err(code === null ? { kind: 'unavailable' } : mapFirebaseAuthError(code));
 };
 
-/**
- * Firebase Authentication behind AuthService. Session persistence is the
- * native SDK's; this module never stores passwords or tokens.
- */
+/** Session persistence is the native SDK's. This module never stores passwords or tokens. */
 export const createFirebaseAuthService = (): AuthService => {
   const auth = getAuth();
 

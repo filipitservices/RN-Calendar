@@ -2,10 +2,7 @@ import type { AuthFailure } from './authService';
 
 const withAuthPrefix = (code: string): string => (code.startsWith('auth/') ? code : `auth/${code}`);
 
-/**
- * Maps a Firebase Auth error code onto the app's closed failure union so
- * screens never inspect vendor error objects.
- */
+/** Screens never inspect vendor error objects. */
 export const mapFirebaseAuthError = (code: string): AuthFailure => {
   switch (withAuthPrefix(code)) {
     case 'auth/email-already-in-use':

@@ -18,10 +18,7 @@ const testUserId = (): string => {
   return id;
 };
 
-/**
- * In-memory AuthService for tests. Not a model of Firebase — just enough
- * behaviour for AppShell integration tests without the native SDK.
- */
+/** In-memory AuthService for AppShell tests. Not a model of Firebase. */
 export const createTestAuthService = (): AuthService => {
   const accounts: StoredAccount[] = [];
   let session: User | null = null;

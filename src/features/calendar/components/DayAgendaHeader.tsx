@@ -14,10 +14,6 @@ export type DayAgendaHeaderProps = {
   onNextDay: () => void;
 };
 
-/**
- * Heading for the selected day's agenda, including the day-level navigation
- * required alongside month paging.
- */
 export const DayAgendaHeader = ({
   date,
   today,

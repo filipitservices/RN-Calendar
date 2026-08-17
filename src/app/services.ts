@@ -4,9 +4,6 @@ import { createFirestoreEventService } from '../services/events/firestoreEventSe
 import { createKeychainSecureCredentialStore } from '../services/storage/keychainSecureCredentialStore';
 import { mmkvKeyValueStore } from '../services/storage/mmkvKeyValueStore';
 
-/**
- * The single place where interfaces are bound to implementations.
- */
 export const authService = createFirebaseAuthService();
 
 export const eventService = createFirestoreEventService();

@@ -54,7 +54,7 @@ const biometryOf = (value: string | null): SupportedBiometry => {
 
 /**
  * The only module that imports react-native-keychain. Stores a nonce gated by
- * the current biometric set — never Firebase tokens or passwords.
+ * the current biometric set, never Firebase tokens or passwords.
  */
 export const createKeychainSecureCredentialStore = (): SecureCredentialStore => ({
   has: () => hasGenericPassword({ service: SERVICE }),

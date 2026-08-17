@@ -11,9 +11,6 @@ export type SecureCredential = {
   readonly secret: string;
 };
 
-/**
- * Closed failure union so callers never inspect vendor error objects.
- */
 export type SecureCredentialFailure =
   | { kind: 'cancelled' }
   | { kind: 'notEnrolled' }

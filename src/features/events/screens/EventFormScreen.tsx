@@ -12,11 +12,6 @@ import { eventFailureMessage, useEvents } from '../EventsProvider';
 import { TimeOfDayField } from '../components/TimeOfDayField';
 import { useEventForm } from '../useEventForm';
 
-/**
- * Creating and editing an event are the same domain operation, so they share
- * one screen, one form hook, and one validator. The route param's discriminant
- * decides only which persistence call runs and how the screen is titled.
- */
 export const EventFormScreen = ({ route, navigation }: RootStackScreenProps<'EventForm'>) => {
   const { events } = useEvents();
   const params = route.params;

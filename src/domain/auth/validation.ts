@@ -9,7 +9,7 @@ const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M} .'-]+$/u;
 
 /**
  * Pragmatic email check: a single `@`, a non-empty local part, and a dotted
- * domain with a plausible TLD. Deliberately not RFC 5322 — an over-strict
+ * domain with a plausible TLD. Deliberately not RFC 5322: an over-strict
  * regex rejects valid addresses, and only a real send can truly verify one.
  */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;

@@ -4,7 +4,6 @@ import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
 import { radii, raisedElevation, spacing, useTheme } from '../theme';
 
 export type CardProps = ViewProps & {
-  /** `flat` sits inline in a list; `raised` lifts off the background. */
   tone?: 'flat' | 'raised';
   padded?: boolean;
   style?: StyleProp<ViewStyle>;

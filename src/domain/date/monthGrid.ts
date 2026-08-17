@@ -7,7 +7,7 @@ import {
 } from './calendarDate';
 import type { CalendarDate, YearMonth } from './calendarDate';
 
-/** 0 = Sunday … 6 = Saturday. */
+/** 0 = Sunday, 6 = Saturday. */
 export type WeekStart = 0 | 1;
 
 export const DAYS_PER_WEEK = 7;
@@ -27,22 +27,13 @@ export type MonthGridDay = {
 export type MonthGrid = {
   readonly yearMonth: YearMonth;
   readonly weekStart: WeekStart;
-  /** Exactly `WEEKS_PER_GRID` rows of `DAYS_PER_WEEK` days. */
   readonly weeks: readonly (readonly MonthGridDay[])[];
 };
 
-/**
- * Builds the calendar grid for a month.
- *
- * The grid always starts on `weekStart` and always contains 42 cells, padded
- * with days from the neighbouring months so every row is full. Everything is
- * derived by counting days forward from a single anchor, so there is no
- * per-cell date construction that could disagree about month boundaries.
- */
+/** Always 42 cells from one anchor, padded with neighbouring months. */
 export const buildMonthGrid = (yearMonth: YearMonth, weekStart: WeekStart = 1): MonthGrid => {
   const firstOfMonth = calendarDateFromParts({ ...yearMonth, day: 1 });
 
-  // How many trailing days of the previous month precede the 1st.
   const leadingDays = (dayOfWeek(firstOfMonth) - weekStart + DAYS_PER_WEEK) % DAYS_PER_WEEK;
   const gridStart = addDays(firstOfMonth, -leadingDays);
 

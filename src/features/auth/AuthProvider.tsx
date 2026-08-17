@@ -86,8 +86,6 @@ export const AuthProvider = ({ service, biometricUnlock, children }: AuthProvide
   const runGate = useCallback(
     async (user: User) => {
       const generation = generationRef.current;
-      // Stay on Sign-in while the system prompt is up. Leaving that screen
-      // under BiometricPrompt loses Fabric view tags.
       const result = await biometricUnlock.authenticate();
       if (generation !== generationRef.current) {
         return;

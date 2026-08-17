@@ -45,14 +45,6 @@ const initialFields = (event: CalendarEvent | null): EventFormFields => {
   };
 };
 
-/**
- * Shared form logic for creating and editing an event — the same domain
- * operation, so there is one implementation rather than two.
- *
- * `date` is fixed for the lifetime of the form: create uses the day selected in
- * the calendar, edit uses the event's existing day. Clock times are always
- * valid `TimeOfDay` values; only title, notes, and end-after-start remain.
- */
 export const useEventForm = (date: CalendarDate, event: CalendarEvent | null): EventFormState => {
   const [fields, setFields] = useState<EventFormFields>(() => initialFields(event));
   const [showErrors, setShowErrors] = useState(false);

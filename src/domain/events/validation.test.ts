@@ -1,6 +1,6 @@
 import { parseCalendarDate } from '../date/calendarDate';
 import { timeOfDayFromParts } from '../date/timeOfDay';
-import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from './event';
+import { NOTES_MAX_LENGTH } from './event';
 import type { EventDraft } from './event';
 import { hasErrors, validateEventDraft } from './validation';
 

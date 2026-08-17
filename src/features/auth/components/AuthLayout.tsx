@@ -13,10 +13,6 @@ export type AuthLayoutProps = {
   onFooterPress: () => void;
 };
 
-/**
- * Shared shell for the sign-in and registration screens. The content column is
- * vertically centered in leftover space; short screens still scroll.
- */
 export const AuthLayout = ({
   title,
   subtitle,

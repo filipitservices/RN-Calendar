@@ -1,7 +1,6 @@
 /**
- * Type-level checks. These have no runtime assertions — they fail the build via
- * `npm run typecheck` if the navigation types stop guaranteeing what the rest
- * of the app relies on.
+ * Type-level checks with no runtime assertions. They fail `npm run typecheck`
+ * if navigation types stop guaranteeing what the rest of the app relies on.
  */
 import type { EventFormParams, RootStackParamList } from './types';
 

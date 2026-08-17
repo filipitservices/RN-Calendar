@@ -14,9 +14,7 @@ export type ScreenProps = {
    * Default is left/right only so screens under a header do not double-inset.
    */
   edges?: readonly Edge[];
-  /** Wraps children in a ScrollView. Use for forms and any content that can overflow. */
   scrollable?: boolean;
-  /** Adds horizontal gutters. Disable for full-bleed content such as lists. */
   padded?: boolean;
   background?: 'default' | 'surface';
   contentContainerStyle?: StyleProp<ViewStyle>;

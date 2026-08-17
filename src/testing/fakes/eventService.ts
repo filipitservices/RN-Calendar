@@ -12,10 +12,7 @@ const testEventId = (): string => {
   return id;
 };
 
-/**
- * In-memory EventService for tests. Not a model of Firestore — just enough
- * behaviour for AppShell integration tests without the native SDK.
- */
+/** In-memory EventService for AppShell tests. Not a model of Firestore. */
 export const createTestEventService = (): EventService => {
   const eventsByUser = new Map<string, CalendarEvent[]>();
 

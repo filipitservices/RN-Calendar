@@ -16,11 +16,7 @@ export type MonthGridProps = {
   onSelectDate: (date: CalendarDate) => void;
 };
 
-/**
- * The month view. Layout is pure flex — each row divides the available width
- * into seven equal cells — so the grid adapts to any screen width or
- * orientation without measuring the window.
- */
+/** Flex rows, seven equal cells. No window measurement. */
 export const MonthGrid = ({
   grid,
   selected,

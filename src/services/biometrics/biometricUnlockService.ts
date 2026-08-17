@@ -11,13 +11,13 @@ const UNLOCK_USER_KEY = 'prefs/biometricUnlockUserId';
 const LAST_EMAIL_KEY = 'prefs/lastLoggedInEmail';
 
 const UNLOCK_PROMPT: AuthPrompt = {
-  title: 'Unlock CalendarApp',
+  title: 'Unlock Calendar App',
   description: "Confirm it's you to open your calendar.",
   cancel: 'Use password',
 };
 
 const ENABLE_PROMPT: AuthPrompt = {
-  title: 'Unlock CalendarApp',
+  title: 'Unlock Calendar App',
   description: "Confirm it's you to turn on biometric sign-in on this device.",
   cancel: 'Cancel',
 };

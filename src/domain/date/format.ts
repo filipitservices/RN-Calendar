@@ -35,7 +35,7 @@ const asDate = (date: CalendarDate): Date => {
 export const formatMonthYear = ({ year, month }: YearMonth, locale?: Locale): string =>
   formatter(locale, { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1, 12));
 
-/** "Saturday, 15 August 2026" — used for calendar cell accessibility labels. */
+/** Full weekday date, used for calendar cell accessibility labels. */
 export const formatFullDate = (date: CalendarDate, locale?: Locale): string =>
   formatter(locale, {
     weekday: 'long',
@@ -44,11 +44,10 @@ export const formatFullDate = (date: CalendarDate, locale?: Locale): string =>
     year: 'numeric',
   }).format(asDate(date));
 
-/** "Sat, 15 August" — the selected-day heading above the agenda. */
+/** Selected-day heading above the agenda. */
 export const formatDayHeading = (date: CalendarDate, locale?: Locale): string =>
   formatter(locale, { weekday: 'short', day: 'numeric', month: 'long' }).format(asDate(date));
 
-/** Short weekday name for a 0-6 index, for the calendar's column headers. */
 export const formatWeekdayShort = (weekday: number, locale?: Locale): string => {
   // 2024-01-07 was a Sunday, so adding the index lands on the wanted weekday.
   const reference = new Date(2024, 0, 7 + weekday, 12);
@@ -80,7 +79,6 @@ export const formatDuration = (start: TimeOfDay, end: TimeOfDay): string => {
   return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`;
 };
 
-/** "Today" / "Tomorrow" / "Yesterday" where applicable, otherwise null. */
 export const relativeDayLabel = (date: CalendarDate, today = todayCalendarDate()): string | null => {
   if (date === today) {
     return 'Today';

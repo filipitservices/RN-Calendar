@@ -1,7 +1,6 @@
 import type { EventDraft } from './event';
 import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH, isAllowedEventNotes, isAllowedEventTitle } from './event';
 
-/** Keyed by form field so the screen can attach each message to its input. */
 export type EventFieldErrors = {
   readonly title?: string;
   readonly startMinutes?: string;

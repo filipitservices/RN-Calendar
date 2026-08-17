@@ -14,9 +14,7 @@ export type MemorySecureCredentialOptions = {
   onGet?: () => Result<SecureCredential, SecureCredentialFailure>;
 };
 
-/**
- * In-memory Keychain stand-in for tests. Does not prompt.
- */
+/** In-memory Keychain stand-in. Does not prompt. */
 export const createMemorySecureCredentialStore = (
   options: MemorySecureCredentialOptions = {},
 ): SecureCredentialStore => {
