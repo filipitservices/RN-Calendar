@@ -154,15 +154,15 @@ npm test             # jest
 npm run test:coverage
 ```
 
-The suite has **125 tests across 16 Jest files** (plus `src/navigation/types.test-d.ts`, typecheck only). `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
+The suite has **128 tests across 16 Jest files** (plus `src/navigation/types.test-d.ts`, typecheck only). `jest.config.js` sets thresholds just below the current numbers so a regression fails the build; the assignment's 5% floor is not the design target.
 
 What is actually covered:
 
 - **Date arithmetic** — leap years across the 100/400-year rule, month-length transitions, week-start rotation, year boundaries, and month-addition clamping (31 Jan + 1 month = 28/29 Feb, not 3 Mar).
-- **Validation** — email shape, password rules, event title bounds, and end-before-start.
-- **Decoding** — malformed persisted records are rejected rather than trusted.
+- **Validation** — email shape and length, registration password min/max length (Firebase default), event title/notes bounds, and end-before-start.
+- **Decoding** — malformed persisted records are rejected rather than trusted, including empty titles and overlong notes.
 - **The auth reducer's** state transitions, including that a late form action cannot drop an active session.
-- **Firebase Auth error mapping** (`mapFirebaseAuthError`) — vendor codes onto the closed `AuthFailure` union, including collapsing `user-not-found` / `wrong-password` to `invalidCredentials`.
+- **Firebase Auth error mapping** (`mapFirebaseAuthError`) — vendor codes onto the closed `AuthFailure` union, including collapsing `user-not-found` / `wrong-password` to `invalidCredentials` and `weak-password` to `weakPassword`.
 - **Keychain/BiometricPrompt error mapping** (`mapSecureCredentialError`), including Android cancel `10` vs unavailable `1`.
 - **Biometric unlock service** against in-memory prefs and a Keychain fake (enable bound to user, authenticate, disable, mismatch, invalidated secret).
 - **In-memory auth and event fakes** (`src/testing/fakes/`) for whole-app tests — not the native Firebase SDKs.
@@ -278,7 +278,9 @@ iOS: no `GoogleService-Info.plist` was supplied. Do not invent one, and do not c
 
 `User.id` is the Firebase **UID** (`asUserId(uid)`). Email is not an identifier. `displayName` is written with `updateProfile` after `createUserWithEmailAndPassword`. `createdAt` comes from `user.metadata.creationTime`, normalised to ISO at the service boundary.
 
-`AuthService.subscribe` wraps `onAuthStateChanged`. `AuthProvider` subscribes once; the existing `restoring` status covers Firebase's first callback so the sign-in screen does not flash. Passwords and tokens are not stored in the app. Firebase `error.code` values are mapped in `mapFirebaseAuthError` onto `AuthFailure` (`emailAlreadyRegistered`, `invalidCredentials`, `unavailable`).
+`AuthService.subscribe` wraps `onAuthStateChanged`. `AuthProvider` subscribes once; the existing `restoring` status covers Firebase's first callback so the sign-in screen does not flash. Passwords and tokens are not stored in the app. Firebase `error.code` values are mapped in `mapFirebaseAuthError` onto `AuthFailure` (`emailAlreadyRegistered`, `invalidCredentials`, `weakPassword`, `unavailable`).
+
+The client only checks that an email looks plausible (and is at most 256 characters) and that a new password is at least 6 characters (Firebase's default minimum) and at most 4096. Complexity beyond that is the Firebase Console password policy; `auth/weak-password` is shown as `weakPassword`. Sign-in does not re-check strength, so existing accounts still open.
 
 Native Firebase already persists the authenticated session on device. This app does **not** copy refresh tokens, ID tokens, or passwords into MMKV or Keychain.
 
@@ -305,16 +307,22 @@ Small non-secret values go through one MMKV v4 instance (`createMMKV({ id: 'cale
 
 ### Events (Cloud Firestore)
 
-Path: `users/{uid}/events/{eventId}`. Document fields match `CalendarEvent` (ISO strings for times and audit fields). Reads go through `decodeCalendarEvent`. Drafts still pass `validateEventDraft` in the service before a write.
+Path: `users/{uid}/events/{eventId}`. Document fields match `CalendarEvent` except `id`, which is the document id (ISO strings for the civil date and audit fields; minutes since midnight for start/end). Reads go through `decodeCalendarEvent`. Drafts still pass `validateEventDraft` in the service before a write.
 
-Rules are in `firestore.rules` (not open, and not “any signed-in user can read all events”):
+Rules are in `firestore.rules`. Ownership is the path (`request.auth.uid == userId`). Writes must be exactly `title`, `notes`, `date`, `startMinutes`, `endMinutes`, `createdAt`, `updatedAt`; titles are non-empty and ≤80 characters; notes are `null` or a non-empty string ≤500; `date` is `YYYY-MM-DD`; times are integers in `[0, 1439]` with end after start. Updates cannot change `createdAt`.
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId}/events/{eventId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, delete: if signedInAs(userId);
+      allow create: if signedInAs(userId) && eventShape() && eventValues();
+      allow update: if signedInAs(userId)
+        && eventShape()
+        && eventValues()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['title', 'notes', 'date', 'startMinutes', 'endMinutes', 'updatedAt']);
     }
   }
 }
@@ -329,6 +337,7 @@ Before a device can sign in or persist events:
 1. Enable the **Email/Password** sign-in provider.
 2. Create a **Cloud Firestore** database.
 3. Publish `firestore.rules` (`firebase deploy --only firestore:rules`, or paste them in the Console). Check them in the Console rules simulator rather than an in-repo emulator suite.
+4. Optionally set a password policy under Authentication → Settings. The app does not duplicate Console complexity checks.
 
 ## Verification status
 
@@ -336,7 +345,7 @@ Verified after adding the biometric gate:
 
 - `npx tsc --noEmit` — clean, with `strict` on.
 - `npx eslint .` — clean, no errors or warnings.
-- `npx jest` — 125 tests pass (16 files), including AppShell flows for a fresh install (no biometric control), cancelled gate staying off Calendar, password fallback without signing out of Firebase, and logout clearing configuration.
+- `npx jest` — 128 tests pass (16 files), including AppShell flows for a fresh install (no biometric control), cancelled gate staying off Calendar, password fallback without signing out of Firebase, and logout clearing configuration.
 - `npx react-native bundle --platform android --dev false` — succeeds, including `react-native-keychain`.
 - Live emulator/device biometric prompts are **not** claimed (no hypervisor on this machine). Gradle assemble after Keychain is not re-claimed here if `MAX_PATH` blocks the cache.
 

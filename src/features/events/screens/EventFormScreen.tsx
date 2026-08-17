@@ -4,7 +4,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 import type { CalendarDate } from '../../../domain/date/calendarDate';
 import { formatFullDate } from '../../../domain/date/format';
 import type { CalendarEvent } from '../../../domain/events/event';
-import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from '../../../domain/events/validation';
+import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from '../../../domain/events/event';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { Banner, Button, Card, Screen, Text, TextField } from '../../../ui/components';
 import { spacing, useTheme } from '../../../ui/theme';

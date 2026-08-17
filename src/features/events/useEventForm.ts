@@ -4,6 +4,7 @@ import type { CalendarDate } from '../../domain/date/calendarDate';
 import { timeOfDayFromParts } from '../../domain/date/timeOfDay';
 import type { TimeOfDay } from '../../domain/date/timeOfDay';
 import type { CalendarEvent, EventDraft } from '../../domain/events/event';
+import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from '../../domain/events/event';
 import { hasErrors, validateEventDraft } from '../../domain/events/validation';
 import type { EventFieldErrors } from '../../domain/events/validation';
 
@@ -65,7 +66,15 @@ export const useEventForm = (date: CalendarDate, event: CalendarEvent | null): E
   });
 
   const setField = <K extends keyof EventFormFields>(key: K, value: EventFormFields[K]) => {
-    setFields(current => ({ ...current, [key]: value }));
+    setFields(current => {
+      if (key === 'title' && typeof value === 'string') {
+        return { ...current, title: value.slice(0, TITLE_MAX_LENGTH) };
+      }
+      if (key === 'notes' && typeof value === 'string') {
+        return { ...current, notes: value.slice(0, NOTES_MAX_LENGTH) };
+      }
+      return { ...current, [key]: value };
+    });
   };
 
   const submit = (): EventDraft | null => {

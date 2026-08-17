@@ -14,6 +14,7 @@ describe('mapFirebaseAuthError', () => {
     expect(mapFirebaseAuthError('email-already-in-use')).toEqual({
       kind: 'emailAlreadyRegistered',
     });
+    expect(mapFirebaseAuthError('auth/weak-password')).toEqual({ kind: 'weakPassword' });
   });
 
   it('treats network and unknown codes as unavailable', () => {

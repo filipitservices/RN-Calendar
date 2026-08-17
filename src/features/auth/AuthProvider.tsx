@@ -299,6 +299,8 @@ export const authFailureMessage = (failure: AuthFailure): string => {
       return 'That email and password combination does not match an account.';
     case 'emailAlreadyRegistered':
       return 'An account already exists for that email address.';
+    case 'weakPassword':
+      return "That password does not meet this project's requirements.";
     case 'unavailable':
       return 'Could not reach the authentication service. Please try again.';
   }

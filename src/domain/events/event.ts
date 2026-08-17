@@ -7,6 +7,25 @@ export type EventId = string & { readonly __brand: 'EventId' };
 
 export const asEventId = (value: string): EventId => value as EventId;
 
+export const TITLE_MAX_LENGTH = 80;
+export const NOTES_MAX_LENGTH = 500;
+
+/** Letters, marks, numbers, spaces, and ordinary punctuation — not emoji, markup, or control characters. */
+const TITLE_CHAR_PATTERN = /^[\p{L}\p{M}\p{N} .,'!?()\-&/:]+$/u;
+
+export const isAllowedEventTitle = (title: string): boolean =>
+  TITLE_CHAR_PATTERN.test(title) && /[\p{L}\p{N}]/u.test(title);
+
+export const isAllowedEventNotes = (notes: string): boolean => {
+  for (let index = 0; index < notes.length; index += 1) {
+    const code = notes.charCodeAt(index);
+    if (code === 127 || (code < 32 && code !== 9 && code !== 10)) {
+      return false;
+    }
+  }
+  return true;
+};
+
 /**
  * A meeting on a single civil day.
  *
@@ -131,10 +150,28 @@ export const decodeCalendarEvent = (value: unknown): CalendarEvent | null => {
     return null;
   }
 
+  const title = record.title.trim();
+  if (
+    title.length === 0 ||
+    title.length > TITLE_MAX_LENGTH ||
+    !isAllowedEventTitle(title)
+  ) {
+    return null;
+  }
+
+  let notes: string | null = null;
+  if (typeof record.notes === 'string') {
+    const trimmedNotes = record.notes.trim();
+    if (trimmedNotes.length > NOTES_MAX_LENGTH || !isAllowedEventNotes(trimmedNotes)) {
+      return null;
+    }
+    notes = trimmedNotes.length > 0 ? trimmedNotes : null;
+  }
+
   return {
     id: asEventId(record.id),
-    title: record.title,
-    notes: typeof record.notes === 'string' ? record.notes : null,
+    title,
+    notes,
     date,
     startMinutes,
     endMinutes,

@@ -1,7 +1,11 @@
 import type { Credentials, Registration } from './user';
 
-export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MIN_LENGTH = 6;
+export const PASSWORD_MAX_LENGTH = 4096;
+export const EMAIL_MAX_LENGTH = 256;
 export const DISPLAY_NAME_MAX_LENGTH = 60;
+
+const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M} .'-]+$/u;
 
 /**
  * Pragmatic email check: a single `@`, a non-empty local part, and a dotted
@@ -24,22 +28,31 @@ export const validateEmail = (email: string): string | undefined => {
   if (trimmed.length === 0) {
     return 'Enter your email address.';
   }
+  if (trimmed.length > EMAIL_MAX_LENGTH) {
+    return `Keep your email under ${EMAIL_MAX_LENGTH} characters.`;
+  }
   return EMAIL_PATTERN.test(trimmed) ? undefined : 'Enter a valid email address.';
 };
 
-/** Sign-in only checks that a password was typed; strength rules apply at registration. */
-const validatePasswordPresence = (password: string): string | undefined =>
-  password.length === 0 ? 'Enter your password.' : undefined;
+const validatePasswordPresence = (password: string): string | undefined => {
+  if (password.length === 0) {
+    return 'Enter your password.';
+  }
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return `Keep your password under ${PASSWORD_MAX_LENGTH} characters.`;
+  }
+  return undefined;
+};
 
-const validatePasswordStrength = (password: string): string | undefined => {
+const validatePasswordForRegistration = (password: string): string | undefined => {
   if (password.length === 0) {
     return 'Choose a password.';
   }
   if (password.length < PASSWORD_MIN_LENGTH) {
     return `Use at least ${PASSWORD_MIN_LENGTH} characters.`;
   }
-  if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
-    return 'Include at least one letter and one number.';
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return `Keep your password under ${PASSWORD_MAX_LENGTH} characters.`;
   }
   return undefined;
 };
@@ -65,6 +78,8 @@ export const validateRegistration = (registration: Registration): RegistrationFi
     errors.displayName = 'Enter your name.';
   } else if (name.length > DISPLAY_NAME_MAX_LENGTH) {
     errors.displayName = `Keep your name under ${DISPLAY_NAME_MAX_LENGTH} characters.`;
+  } else if (!DISPLAY_NAME_PATTERN.test(name) || !/\p{L}/u.test(name)) {
+    errors.displayName = 'Use letters, spaces, hyphens, and apostrophes only.';
   }
 
   const email = validateEmail(registration.email);
@@ -72,7 +87,7 @@ export const validateRegistration = (registration: Registration): RegistrationFi
     errors.email = email;
   }
 
-  const password = validatePasswordStrength(registration.password);
+  const password = validatePasswordForRegistration(registration.password);
   if (password !== undefined) {
     errors.password = password;
   }

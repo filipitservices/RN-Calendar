@@ -1,7 +1,14 @@
 import { useMemo, useRef, useState } from 'react';
 import type { TextInputInstance } from 'react-native';
 
-import { PASSWORD_MIN_LENGTH, hasErrors, validateRegistration } from '../../../domain/auth/validation';
+import {
+  DISPLAY_NAME_MAX_LENGTH,
+  EMAIL_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  hasErrors,
+  validateRegistration,
+} from '../../../domain/auth/validation';
 import { Banner, Button, TextField } from '../../../ui/components';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { authFailureMessage, useAuth } from '../AuthProvider';
@@ -50,7 +57,7 @@ export const SignUpScreen = ({ navigation }: RootStackScreenProps<'SignUp'>) => 
       <TextField
         label="Name"
         value={displayName}
-        onChangeText={onChange(setDisplayName)}
+        onChangeText={onChange(value => setDisplayName(value.slice(0, DISPLAY_NAME_MAX_LENGTH)))}
         error={submitted ? errors.displayName : undefined}
         autoCapitalize="words"
         autoComplete="name"
@@ -58,6 +65,7 @@ export const SignUpScreen = ({ navigation }: RootStackScreenProps<'SignUp'>) => 
         returnKeyType="next"
         onSubmitEditing={() => emailRef.current?.focus()}
         editable={!isPending}
+        maxLength={DISPLAY_NAME_MAX_LENGTH}
         placeholder="Alex Morgan"
       />
 
@@ -75,6 +83,7 @@ export const SignUpScreen = ({ navigation }: RootStackScreenProps<'SignUp'>) => 
         returnKeyType="next"
         onSubmitEditing={() => passwordRef.current?.focus()}
         editable={!isPending}
+        maxLength={EMAIL_MAX_LENGTH}
         placeholder="you@example.com"
       />
 
@@ -84,7 +93,8 @@ export const SignUpScreen = ({ navigation }: RootStackScreenProps<'SignUp'>) => 
         value={password}
         onChangeText={onChange(setPassword)}
         error={submitted ? errors.password : undefined}
-        hint={`At least ${PASSWORD_MIN_LENGTH} characters, with a letter and a number.`}
+        hint={`At least ${PASSWORD_MIN_LENGTH} characters.`}
+        maxLength={PASSWORD_MAX_LENGTH}
         autoCapitalize="none"
         autoComplete="new-password"
         secureTextEntry

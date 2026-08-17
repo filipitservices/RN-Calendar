@@ -8,6 +8,7 @@ import type { Result } from '../../lib/result';
 export type AuthFailure =
   | { kind: 'invalidCredentials' }
   | { kind: 'emailAlreadyRegistered' }
+  | { kind: 'weakPassword' }
   | { kind: 'unavailable' };
 
 export type AuthResult = Result<User, AuthFailure>;

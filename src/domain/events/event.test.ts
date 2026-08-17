@@ -1,6 +1,7 @@
 import { parseCalendarDate } from '../date/calendarDate';
 import { timeOfDayFromParts } from '../date/timeOfDay';
 import {
+  NOTES_MAX_LENGTH,
   asEventId,
   compareEvents,
   conflictingEventIds,
@@ -168,6 +169,10 @@ describe('decodeCalendarEvent', () => {
     expect(decodeCalendarEvent({ ...raw, notes: undefined })?.notes).toBeNull();
   });
 
+  it('treats blank notes as null', () => {
+    expect(decodeCalendarEvent({ ...raw, notes: '   ' })?.notes).toBeNull();
+  });
+
   it.each([
     ['a bad date', { date: '2026-02-30' }],
     ['a non-integer time', { startMinutes: 9.5 }],
@@ -175,6 +180,9 @@ describe('decodeCalendarEvent', () => {
     ['an end before the start', { startMinutes: 600, endMinutes: 540 }],
     ['a missing id', { id: '' }],
     ['a non-string title', { title: 42 }],
+    ['an empty title', { title: '   ' }],
+    ['a title with markup', { title: '<script>' }],
+    ['overlong notes', { notes: 'a'.repeat(NOTES_MAX_LENGTH + 1) }],
   ])('rejects %s instead of trusting it', (_label, override) => {
     expect(decodeCalendarEvent({ ...raw, ...override })).toBeNull();
   });

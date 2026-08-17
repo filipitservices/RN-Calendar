@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInputInstance } from 'react-native';
 
-import { hasErrors, validateSignIn } from '../../../domain/auth/validation';
+import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, hasErrors, validateSignIn } from '../../../domain/auth/validation';
 import { Banner, Button, TextField } from '../../../ui/components';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import {
@@ -82,6 +82,7 @@ export const SignInScreen = ({ navigation }: RootStackScreenProps<'SignIn'>) => 
         returnKeyType="next"
         onSubmitEditing={() => passwordRef.current?.focus()}
         editable={!isPending}
+        maxLength={EMAIL_MAX_LENGTH}
         placeholder="you@example.com"
       />
 
@@ -98,6 +99,7 @@ export const SignInScreen = ({ navigation }: RootStackScreenProps<'SignIn'>) => 
         returnKeyType="go"
         onSubmitEditing={handleSubmit}
         editable={!isPending}
+        maxLength={PASSWORD_MAX_LENGTH}
         placeholder="Your password"
       />
 

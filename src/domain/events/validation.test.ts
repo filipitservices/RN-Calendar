@@ -1,7 +1,8 @@
 import { parseCalendarDate } from '../date/calendarDate';
 import { timeOfDayFromParts } from '../date/timeOfDay';
+import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from './event';
 import type { EventDraft } from './event';
-import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH, hasErrors, validateEventDraft } from './validation';
+import { hasErrors, validateEventDraft } from './validation';
 
 const date = parseCalendarDate('2026-08-15');
 if (date === null) {
@@ -27,11 +28,18 @@ describe('validateEventDraft', () => {
     expect(validateEventDraft(draft({ title: '   ' })).title).toBeDefined();
   });
 
-  it('bounds the title length', () => {
-    expect(validateEventDraft(draft({ title: 'a'.repeat(TITLE_MAX_LENGTH) })).title).toBeUndefined();
-    expect(
-      validateEventDraft(draft({ title: 'a'.repeat(TITLE_MAX_LENGTH + 1) })).title,
-    ).toBeDefined();
+  it('accepts ordinary punctuation and international letters in a title', () => {
+    expect(validateEventDraft(draft({ title: "1:1 with José (Q3) - Sarah's sync" })).title).toBeUndefined();
+  });
+
+  it('rejects markup, emoji, and other symbols in a title', () => {
+    expect(validateEventDraft(draft({ title: '<script>' })).title).toBeDefined();
+    expect(validateEventDraft(draft({ title: 'Launch 🎉' })).title).toBeDefined();
+    expect(validateEventDraft(draft({ title: 'Meet @office' })).title).toBeDefined();
+  });
+
+  it('rejects control characters in notes', () => {
+    expect(validateEventDraft(draft({ notes: 'agenda\u0000' })).notes).toBeDefined();
   });
 
   it('requires the end to be strictly after the start', () => {

@@ -10,6 +10,8 @@ export const mapFirebaseAuthError = (code: string): AuthFailure => {
   switch (withAuthPrefix(code)) {
     case 'auth/email-already-in-use':
       return { kind: 'emailAlreadyRegistered' };
+    case 'auth/weak-password':
+      return { kind: 'weakPassword' };
     case 'auth/invalid-credential':
     case 'auth/invalid-login-credentials':
     case 'auth/wrong-password':

@@ -1,7 +1,5 @@
 import type { EventDraft } from './event';
-
-export const TITLE_MAX_LENGTH = 80;
-export const NOTES_MAX_LENGTH = 500;
+import { NOTES_MAX_LENGTH, TITLE_MAX_LENGTH, isAllowedEventNotes, isAllowedEventTitle } from './event';
 
 /** Keyed by form field so the screen can attach each message to its input. */
 export type EventFieldErrors = {
@@ -28,6 +26,8 @@ export const validateEventDraft = (draft: EventDraft): EventFieldErrors => {
     errors.title = 'Add a title so you can recognise this event.';
   } else if (title.length > TITLE_MAX_LENGTH) {
     errors.title = `Keep the title under ${TITLE_MAX_LENGTH} characters.`;
+  } else if (!isAllowedEventTitle(title)) {
+    errors.title = 'Use letters, numbers, spaces, and ordinary punctuation only.';
   }
 
   if (draft.endMinutes <= draft.startMinutes) {
@@ -36,6 +36,8 @@ export const validateEventDraft = (draft: EventDraft): EventFieldErrors => {
 
   if (draft.notes.length > NOTES_MAX_LENGTH) {
     errors.notes = `Keep notes under ${NOTES_MAX_LENGTH} characters.`;
+  } else if (!isAllowedEventNotes(draft.notes)) {
+    errors.notes = 'Notes cannot include control characters.';
   }
 
   return errors;

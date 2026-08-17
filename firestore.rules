@@ -1,8 +1,48 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedInAs(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function eventKeys() {
+      return ['title', 'notes', 'date', 'startMinutes', 'endMinutes', 'createdAt', 'updatedAt'];
+    }
+
+    function eventShape() {
+      return request.resource.data.keys().hasAll(eventKeys())
+        && request.resource.data.keys().hasOnly(eventKeys());
+    }
+
+    function eventValues() {
+      let data = request.resource.data;
+      return data.title is string
+        && data.title.size() <= 80
+        && data.title.matches('^[\\p{L}\\p{M}\\p{N} .,!?()&/:\\x27-]+$')
+        && data.title.matches('.*[\\p{L}\\p{N}].*')
+        && (data.notes == null
+          || (data.notes is string && data.notes.size() > 0 && data.notes.size() <= 500))
+        && data.date is string
+        && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.startMinutes is int
+        && data.endMinutes is int
+        && data.startMinutes >= 0
+        && data.startMinutes < 1440
+        && data.endMinutes >= 0
+        && data.endMinutes < 1440
+        && data.endMinutes > data.startMinutes
+        && data.createdAt is string
+        && data.updatedAt is string;
+    }
+
     match /users/{userId}/events/{eventId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, delete: if signedInAs(userId);
+      allow create: if signedInAs(userId) && eventShape() && eventValues();
+      allow update: if signedInAs(userId)
+        && eventShape()
+        && eventValues()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['title', 'notes', 'date', 'startMinutes', 'endMinutes', 'updatedAt']);
     }
   }
 }
