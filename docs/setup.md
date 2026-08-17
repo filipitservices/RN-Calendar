@@ -26,10 +26,6 @@ x86_64 emulator: Windows Hypervisor Platform or Android Emulator hypervisor driv
 
 Physical device: Developer options, USB debugging, `adb devices`.
 
-## iOS
-
-`pod install` after install or native dependency changes. Firebase needs a real `GoogleService-Info.plist` (not in this repo). `NSFaceIDUsageDescription` is already in `ios/CalendarApp/Info.plist`.
-
 ## Windows Gradle paths
 
 React Native unpacks prefab C++ headers into the Gradle cache. Nested `GRADLE_USER_HOME` can exceed `MAX_PATH` (260) and fail `ninja` with `Filename longer than 260 characters`. Keep Gradle home short (`C:\Users\<you>\.gradle`) or set `LongPathsEnabled` under `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem`.

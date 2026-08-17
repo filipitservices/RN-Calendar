@@ -55,10 +55,6 @@ Validation (`validateEventDraft`) runs on every change; messages appear after th
 
 If `kind: 'edit'` and the event is gone from the list, the screen shows “This event is no longer available.” The form remounts on `eventId` or create-date (`key`) instead of syncing fields in an effect.
 
-## Profile
-
-Display name, email, initials avatar (`initialsOf`: first and last word, else email prefix), event count, member-since from `createdAt`. Biometric card: capability `ready` | `notEnrolled` | `unavailable`; enable runs a Keychain prompt; cancel leaves the gate off.
-
 ## Dates
 
 Placement is `date` (`CalendarDate`, `YYYY-MM-DD`) plus `startMinutes` / `endMinutes` (`TimeOfDay`, minutes from local midnight). `createdAt` / `updatedAt` are ISO instants for audit.

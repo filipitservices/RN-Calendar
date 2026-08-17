@@ -4,6 +4,16 @@ A calendar and meeting-management app for Android, built with plain React Native
 
 `CalendarApp` / `com.calendarapp` are technical identifiers, not product branding.
 
+## Contents
+
+- [Screenshots](#screenshots)
+- [What it does](#what-it-does)
+- [Prerequisites](#prerequisites)
+- [Install and run](#install-and-run)
+- [Testing](#testing)
+- [Structure](#structure)
+- [Documentation](#documentation)
+
 ## Screenshots
 
 ### Calendar
@@ -90,16 +100,6 @@ After the gate is on, a restored session lands on Sign in with a biometric contr
     </td>
   </tr>
 </table>
-
-## Contents
-
-- [Screenshots](#screenshots)
-- [What it does](#what-it-does)
-- [Prerequisites](#prerequisites)
-- [Install and run](#install-and-run)
-- [Testing](#testing)
-- [Structure](#structure)
-- [Documentation](#documentation)
 
 ## What it does
 

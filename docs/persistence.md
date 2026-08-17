@@ -65,12 +65,3 @@ Instance id `calendarapp`. Adapter: missing key → `null`; empty key write reje
 | `prefs/biometricUnlockUserId` | UID that enabled the gate |
 
 `AppearanceProvider` uses `useMMKVString` and `Appearance.setColorScheme`. Jest: `jest.setup.js` stubs Nitro; MMKV uses `createMockMMKV`.
-
-## Operator
-
-1. Email/Password provider.
-2. Cloud Firestore.
-3. Publish `firestore.rules`.
-4. Optional password policy under Authentication → Settings.
-
-Avatars are initials. The `storage_bucket` in `google-services.json` is unused; the app has no Storage client.
