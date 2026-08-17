@@ -1,67 +1,115 @@
-# Accounts, meetings, and device data
+# Data and storage
 
-Three stores:
+## Storage overview
 
-| Store | Holds |
+| Store | Contents | Binding |
+| --- | --- | --- |
+| Firebase Authentication | UID, email, display name, session token | `firebaseAuthService.ts` |
+| Cloud Firestore | Events at `users/{uid}/events/{eventId}` | `firestoreEventService.ts` |
+| Keychain / Keystore | Biometric unlock nonce | `keychainSecureCredentialStore.ts` |
+| MMKV | Appearance pref, last email, biometric UID | `mmkvKeyValueStore.ts` |
+
+All production bindings are wired in `src/app/services.ts`. Tests inject in-memory fakes through the same `AppShell` props.
+
+## Firebase Authentication
+
+`User.id` is the Firebase UID. Email is a credential; it is not used as a document key. Display name is set via `updateProfile` after account creation. `createdAt` is sourced from `metadata.creationTime` and normalised to ISO 8601.
+
+All Auth calls normalise the email address (trim + lowercase) via `normaliseEmail`.
+
+**Client-side validation**
+
+| Field | Constraint |
 | --- | --- |
-| Firebase Authentication | UID, email, display name, session (native SDK persistence) |
-| Cloud Firestore | Events at `users/{uid}/events/{eventId}` |
-| This device | MMKV prefs; Keychain nonce for biometric unlock |
+| Email | Valid shape; ≤ 256 characters |
+| Password (registration) | 6–4096 characters (Firebase default minimum; Console policy may be stricter) |
+| Password (sign-in) | Non-empty; ≤ 4096 characters |
 
-Bindings are in `src/app/services.ts`. The native default app is created from `android/app/google-services.json` (`com.calendarapp`, project `react-native-calendar-f87fa`). iOS has no `GoogleService-Info.plist`; Firebase on iOS is unconfigured.
+**Error mapping** (`mapFirebaseAuthError`)
 
-## Accounts
-
-`User.id` is the Firebase UID (`asUserId`). Email identifies the sign-in method. Display name is written with `updateProfile` after `createUserWithEmailAndPassword`. `createdAt` is `metadata.creationTime`, normalised to ISO in `firebaseAuthService`.
-
-`normaliseEmail` trims and lowercases before Auth calls.
-
-Client checks: email shape and length ≤ 256; registration password length 6–4096 (Firebase default minimum). Console password policy applies on `createUser`. Sign-in requires a non-empty password (≤ 4096).
-
-`mapFirebaseAuthError` maps vendor codes onto `AuthFailure`: `invalidCredentials` (including `user-not-found` / `wrong-password` / `invalid-email`), `emailAlreadyRegistered`, `weakPassword`, `unavailable`.
-
-## Events
-
-`addDoc` into `users/{uid}/events`. Document id is the event id; it is not a field. Payload from `fieldsFromDraft`: trimmed title, notes `null` when blank, `date`, `startMinutes`, `endMinutes`, plus `createdAt` / `updatedAt` ISO strings on create. Update writes title, notes, date, times, `updatedAt` and leaves `createdAt`.
-
-| Field | Written value |
+| Firebase code | `AuthFailure.kind` |
 | --- | --- |
-| `title` | trimmed, 1–80 chars, letters/numbers and ordinary punctuation |
-| `notes` | `null` or 1–500 chars |
-| `date` | `YYYY-MM-DD` |
-| `startMinutes`, `endMinutes` | ints in `[0, 1439]`, end > start |
-| `createdAt`, `updatedAt` | ISO strings |
+| `invalid-credential`, `wrong-password`, `user-not-found`, `invalid-email`, `user-disabled` | `invalidCredentials` |
+| `email-already-in-use` | `emailAlreadyRegistered` |
+| `weak-password` | `weakPassword` |
+| anything else | `unavailable` |
 
-`firestoreEventService` and the in-memory fake both reject drafts that fail `validateEventDraft`. Reads run `decodeCalendarEvent` (title/notes bounds, civil date, times, end after start); a bad document is skipped.
+## Firestore events
 
-[`firestore.rules`](../firestore.rules): `request.auth.uid == userId`. Create/update require `keys().hasAll` / `hasOnly` the seven fields. Update `affectedKeys().hasOnly(['title','notes','date','startMinutes','endMinutes','updatedAt'])`.
+**Path:** `users/{uid}/events/{eventId}` — the document ID is the event ID.
 
-List is per `userId`. Overlap badges are derived in the UI.
+**Document schema**
+
+| Field | Type | Constraints |
+| --- | --- | --- |
+| `title` | string | 1–80 characters; Unicode letters, marks, numbers, and ordinary punctuation; must contain at least one letter or number |
+| `notes` | string \| null | `null` when blank; otherwise 1–500 characters |
+| `date` | string | `YYYY-MM-DD` |
+| `startMinutes` | integer | 0–1439 |
+| `endMinutes` | integer | 0–1439; must be > `startMinutes` |
+| `createdAt` | string | ISO 8601 instant; immutable after creation |
+| `updatedAt` | string | ISO 8601 instant |
+
+**Writes:** `fieldsFromDraft` trims the title and stores blank notes as `null`. `firestoreEventService` rejects any draft that fails `validateEventDraft` before writing.
+
+**Reads:** `decodeCalendarEvent` validates every field on read. Malformed documents are silently dropped rather than surfaced as errors.
+
+**Security rules** — [`firestore.rules`](../firestore.rules)
+
+- Ownership: `request.auth.uid == userId` (path-based, not a document field).
+- Create / update: document must contain exactly the seven fields above (`keys().hasAll` + `keys().hasOnly`).
+- Update: only `title`, `notes`, `date`, `startMinutes`, `endMinutes`, `updatedAt` may change (`affectedKeys().hasOnly`). `createdAt` is immutable.
+- Read / delete: owner only.
 
 ## Biometric unlock
 
-Enabled from Profile after a successful Keychain prompt. Disabled by default.
+Biometric unlock is an optional, device-local gate over an already-authenticated Firebase session. It is off by default and must be enabled from Profile.
 
-Keychain item (`com.calendarapp.biometricUnlock`): random nonce, username = UID, `ACCESS_CONTROL.BIOMETRY_CURRENT_SET`, `WHEN_UNLOCKED_THIS_DEVICE_ONLY`, AES-GCM. `has` / `remove` do not present a prompt. Authenticate reads the item (prompt). iOS invalidates the item when the enrolled set changes. Android may not; a mismatch or failed read still clears config and stays on Sign in.
+**Keychain item**
 
-MMKV: `prefs/biometricUnlockUserId` (which account turned the gate on), `prefs/lastLoggedInEmail` (Sign-in prefills). Authorization is the Keychain read.
-
-Cold start, after Firebase restore:
-
-1. No user → Sign in.
-2. User, Keychain/config mismatch or absent → Calendar (`signedIn`).
-3. User and matching gate → `locked` (Sign in with biometrics + password).
-
-Cancel, lockout, `notEnrolled`, `unavailable`, or invalidated secret: stay on Sign in, `gateFailure` message, Firebase session kept. Logout: `signOut`, Keychain reset, MMKV UID removed.
-
-## Prefs (MMKV)
-
-Instance id `calendarapp`. Adapter: missing key → `null`; empty key write rejected.
-
-| Key | Value |
+| Property | Value |
 | --- | --- |
-| `prefs/appearance` | `'light'` or `'dark'`; absent follows system. Logout leaves it. |
-| `prefs/lastLoggedInEmail` | last successful email |
-| `prefs/biometricUnlockUserId` | UID that enabled the gate |
+| Service | `com.calendarapp.biometricUnlock` |
+| Username | Firebase UID |
+| Secret | Random nonce (not a token or password) |
+| Access control | `BIOMETRY_CURRENT_SET` |
+| Accessibility | `WHEN_UNLOCKED_THIS_DEVICE_ONLY` |
+| Storage | AES-GCM |
 
-`AppearanceProvider` uses `useMMKVString` and `Appearance.setColorScheme`. Jest: `jest.setup.js` stubs Nitro; MMKV uses `createMockMMKV`.
+`has()` and `remove()` never present a biometric prompt. `authenticate()` reads the item, which triggers the system prompt.
+
+**Cold start logic** (after Firebase restores the session)
+
+1. No Firebase user → `signedOut`, show Sign in.
+2. Firebase user; no matching Keychain item or config → `signedIn`, open Calendar.
+3. Firebase user and matching gate → `locked`, show Sign in with biometrics + password.
+
+**Failure handling**
+
+Cancel, lockout, unenrolled biometry, unavailable hardware, or an invalidated Keychain item all result in the `gateFailure` banner on Sign in. The Firebase session is preserved. Logout calls `signOut`, resets the Keychain item, and removes `prefs/biometricUnlockUserId`.
+
+**Platform notes**
+
+- iOS: `BIOMETRY_CURRENT_SET` invalidates the Keychain item when enrolled biometrics change.
+- Android: enrollment changes may not invalidate the item; a failed or mismatched read clears config and keeps the user on Sign in.
+
+## MMKV prefs
+
+Instance ID: `calendarapp`. Used for non-secret, device-local preferences only.
+
+| Key | Type | Notes |
+| --- | --- | --- |
+| `prefs/appearance` | `'light'` \| `'dark'` \| absent | Absent means follow the system scheme. Persists across logout. |
+| `prefs/lastLoggedInEmail` | string | Pre-fills the Sign in email field |
+| `prefs/biometricUnlockUserId` | string | Records which UID enabled the gate. Not used for authorisation. |
+
+`AppearanceProvider` reads this key with `useMMKVString` and applies the override via `Appearance.setColorScheme`.
+
+In Jest, `jest.setup.js` stubs `react-native-nitro-modules` so MMKV falls back to `createMockMMKV`.
+
+## Firebase project setup (operator)
+
+1. Enable the **Email/Password** sign-in provider.
+2. Create a **Cloud Firestore** database.
+3. Deploy `firestore.rules` — `firebase deploy --only firestore:rules` or paste into the Console rules editor.
+4. Optionally configure a password policy under **Authentication → Settings**. The app forwards `weakPassword` errors from Firebase but does not enforce complexity client-side.
